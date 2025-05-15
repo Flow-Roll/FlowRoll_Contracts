@@ -3,6 +3,8 @@ pragma solidity ^0.8.28;
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {CadenceRandomConsumer} from "@onflow/flow-sol-utils/src/random/CadenceRandomConsumer.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 
 //The flow roll contract is a dice game created with flow on chain randomness
@@ -15,10 +17,12 @@ struct DiceBets{
     bool won,
     bool numberRolled,
     uint256 payout,
-    uint256 newPrizePool
 }
 
 contract FlowRoll is CadenceRandomConsumer {
+    using SafeMath for uint256;
+    using Address for address payable;
+    using SafeERC20 for IERC20;
 
     address private ERC721Address;
     uint256 private ERC721Index;
@@ -83,7 +87,10 @@ contract FlowRoll is CadenceRandomConsumer {
     ) {
         require(_winnerPrizeShare <= 100, "Prize share is 100% max");
         require(_houseEdge <= 100, "House edge is 100% max");
-        require(_revealCompensation < _diceRollCost,"");
+        require(_revealCompensation < _diceRollCost,"Reveal compensation too high");
+        // revealCompensation plus houseEdge (taken from the diceRollCost) must be less than the diceRollCost 
+        require(_revealCompensation + calculateHouseEdge(_diceRollCost,_houseEdge) < _diceRollCost,"invalid House edge or revealCompensation");
+
         ERC721Address = msg.sender;
         ERC721Index = _ERC721Index;
         prizeVault = 0;
@@ -97,8 +104,7 @@ contract FlowRoll is CadenceRandomConsumer {
         min = _min;
         max = _max;
 
-        //TODO: reveal compensation must be less than the diceRollCost
-        //TODO: revealCompensation and house edge must be less than the diceRollCost together
+
     }
 
     //The admin of the FlowRoll contract is always the owner of the NFT that minted it
@@ -139,7 +145,6 @@ contract FlowRoll is CadenceRandomConsumer {
         false, //Not won yet,
         0, // Didn't roll a number yet,
         0, // No payout,
-        prizeVault // The current prize pool
       );
       
       emit RollPlaced(msg.sender, bet, prizeVault);
@@ -161,7 +166,6 @@ contract FlowRoll is CadenceRandomConsumer {
         false,
         0,
         0,
-        prizeVault
       );
       emit RollPlaced(msg.sender, bet, prizeVault);
     }
@@ -169,28 +173,85 @@ contract FlowRoll is CadenceRandomConsumer {
 //https://github.com/onflow/random-coin-toss/blob/main/solidity/src/CoinToss.sol
     function revealDiceRoll() external{
       require(lastBet  > lastClosedBet,"All bets are closed");
-      DiceBets betToClose = bets[lastClosedBet];
-
-      uint8 rolledRandomNumber = uint8(_fulfillRandomInRange(betToClose.requestId,min,max));\
+      uint8 rolledRandomNumber = uint8(_fulfillRandomInRange(bets[lastClosedBet].requestId,min,max));\
 
       //Determine if the bet we closing did win
-      if(betToClose.bet == rolledRandomNumber){
+      if(bets[lastClosedBet].bet == rolledRandomNumber){
         //WIN
         // Now close the bet
-        //Transfer the prize
-        //Transfer the payouts to the house and the reveal compensation
+        bets[lastClosedBet].closed = true;
+        bets[lastClosedBet].won = true;
+        (uint256 vaultShare, uint256 housePayment) = calculateWinnerPayoutWithFees();
+        bets[lastClosedBet].payout = vaultShare;
+        //Transfer the prize, the fee to the house and the reveal compensation
+        _transferWin(vaultShare,housePayment, bets[lastClosedBet].player);
+        emit RollResult(bets[lastClosedBet].player,true, rolledRandomNumber,vaultShare, prizeVault);
       } else {
         //LOSS
         //Close the bet
+        bets[lastClosedBet].closed = true;
+        bets[lastClosedBet].won = false;
+        bets[lastClosedBet].payout = 0;
         //Transfer the payouts to the house and the reveal compensation
+        _transferLossFees(diceRollCost);
+        emit RollResult(bets[lastClosedBet].player, false,rolledRandomNumber, 0,prizeVault);
       }
+          }
+     
+     //Transfer fees will send the fees from the winner and loser bets
+     //The feeFrom argument is either the diceRollCost for losers or taken from the winnerPrizeShare percentage calculation
+     function _transferLossFees(uint256 feeFrom) internal {
+       uint256 housePayment = calculateHouseEdge(feeFrom);
+       address houseAddress = getAdmin();
+       if(ERC20Address == address(0)){
+           payable(houseAddress).sendValue(housePayment);
+           //Sends the compensation to the address that revealed the dice roll
+           payable(msg.sender).sendValue(revealCompensation);    
+       } else {
+         IERC20(ERC20Address).transfer(houseAddress,housePayment);
+         IERC20(ERC20Address).transfer(msg.sender,revealCompensation);
+       }
+       //Update the prize pool
+       prizeVault -= (housePayment + revealCompensation);
+     }
 
-      //Transfer the payouts, pay the feess
-    }
+     function _transferWin(uint256 payout, uint256 housePayment, address winnerAddress) internal {
+      address houseAddress = getAdmin();
+      if (ERC20Address == address(0)){
+        payable(houseAddress).sendValue(housePayment);
+        payable(msg.sender).sendValue(revealCompensation);
+        payable(winnerAddress).sendValue(payout);
+      } else {
+        IERC20(ERC20Address).transfer(houseAdress, housePayment);
+        IERC20(ERC20Address).transfer(msg.sender,revealCompensation);
+        IERC20(ERC20Address).transfer(winnerAddress,payout);
+      }
+      prizeVault -= (housePayment + revealCompensation + payout);
+     }
 
-    function checkBet(uint8 bet,) internal{
+
+    function checkBet(uint8 bet) internal{
         require(bet >= min, "Bet must be >= min");
         require(bet <= max,"Bet must be <= max");
+    }
+
+    function calculateHouseEdge(uint256 _of) internal view returns (uint256){
+      return (_of / 100) * houseEdge;
+    }
+
+    function calculateWinnerPrizeShare(uint256 _of) internal view returns (uint256){
+      return (_of / 100) * winnerPrizeShare;
+    }
+
+    function calculateWinnerPayoutWithFees() internal view returns (uint256, uint256) {
+      //The winner gets the diceRollCost back + the percentage of the winner prize share minus the fees...
+      uint256 prizeVaultShareWithoutFees = calculateWinnerPrizeShare(prizeVault);
+      uint256 houseEdge = calculateHouseEdge(prizeVaultShareWithoutFees);
+      uint256 vaultShare = (prizeVaultShareWithoutFees - houseEdge) - revealCompensation;
+
+      //Returns the amount to send to the winner, the house edge
+      return vaultShare, houseEdge
+
     }
 
 }
