@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 struct DiceBets{
     uint256 requestId, //The requestId for the randoness
+    uint256 createdAtBlock,
     uint256 player, //The address that is betting 
     uint8 bet, //The number to bet on
     bool closed,
@@ -18,6 +19,8 @@ struct DiceBets{
     bool numberRolled,
     uint256 payout,
 }
+
+//TODO: Add mocking for testing https://github.com/onflow/random-coin-toss/blob/main/solidity/test/CoinToss.t.sol
 
 contract FlowRoll is CadenceRandomConsumer {
     using SafeMath for uint256;
@@ -139,6 +142,7 @@ contract FlowRoll is CadenceRandomConsumer {
       lastBet +=1;
       bets[lastBet] = Bet(
         requestId,
+        block.number,
         msg.sender,
         bet,
         false, //closed
@@ -160,6 +164,7 @@ contract FlowRoll is CadenceRandomConsumer {
       lastBet += 1;
       bets[lastBet] = Bet(
         requestId,
+        block.number,
         msg.sender,
         bet,
         false,
@@ -172,31 +177,33 @@ contract FlowRoll is CadenceRandomConsumer {
 
 //https://github.com/onflow/random-coin-toss/blob/main/solidity/src/CoinToss.sol
     function revealDiceRoll() external{
-      require(lastBet  > lastClosedBet,"All bets are closed");
-      uint8 rolledRandomNumber = uint8(_fulfillRandomInRange(bets[lastClosedBet].requestId,min,max));\
+        require(lastBet  > lastClosedBet,"All bets are finalized");
+        lastClosedBet++;
+        require(block.number > bets[lastClosedBet].createdAtBlock,"Can't roll and reveal in the same block");
+        uint8 rolledRandomNumber = uint8(_fulfillRandomInRange(bets[lastClosedBet].requestId,min,max));\
 
-      //Determine if the bet we closing did win
-      if(bets[lastClosedBet].bet == rolledRandomNumber){
-        //WIN
-        // Now close the bet
-        bets[lastClosedBet].closed = true;
-        bets[lastClosedBet].won = true;
-        (uint256 vaultShare, uint256 housePayment) = calculateWinnerPayoutWithFees();
-        bets[lastClosedBet].payout = vaultShare;
-        //Transfer the prize, the fee to the house and the reveal compensation
-        _transferWin(vaultShare,housePayment, bets[lastClosedBet].player);
-        emit RollResult(bets[lastClosedBet].player,true, rolledRandomNumber,vaultShare, prizeVault);
-      } else {
-        //LOSS
-        //Close the bet
-        bets[lastClosedBet].closed = true;
-        bets[lastClosedBet].won = false;
-        bets[lastClosedBet].payout = 0;
-        //Transfer the payouts to the house and the reveal compensation
-        _transferLossFees(diceRollCost);
-        emit RollResult(bets[lastClosedBet].player, false,rolledRandomNumber, 0,prizeVault);
+        //Determine if the bet we closing did win
+        if(bets[lastClosedBet].bet == rolledRandomNumber){
+          //WIN
+          // Now close the bet
+          bets[lastClosedBet].closed = true;
+          bets[lastClosedBet].won = true;
+          (uint256 vaultShare, uint256 housePayment) = calculateWinnerPayoutWithFees();
+          bets[lastClosedBet].payout = vaultShare;
+          //Transfer the prize, the fee to the house and the reveal compensation
+          _transferWin(vaultShare,housePayment, bets[lastClosedBet].player);
+          emit RollResult(bets[lastClosedBet].player,true, rolledRandomNumber,vaultShare, prizeVault);
+        } else {
+          //LOSS
+          //Close the bet
+          bets[lastClosedBet].closed = true;
+          bets[lastClosedBet].won = false;
+          bets[lastClosedBet].payout = 0;
+          //Transfer the payouts to the house and the reveal compensation
+          _transferLossFees(diceRollCost);
+          emit RollResult(bets[lastClosedBet].player, false,rolledRandomNumber, 0,prizeVault);
+        }        
       }
-          }
      
      //Transfer fees will send the fees from the winner and loser bets
      //The feeFrom argument is either the diceRollCost for losers or taken from the winnerPrizeShare percentage calculation
