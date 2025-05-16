@@ -3,7 +3,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./FlowRoll.sol";
 
-contract FlowRollNft is ERC721, ERC721URIStorage, Ownable {
+contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
     uint256 public MAXMINT; //Maximum amount of NFTs that can be minted
     uint256 public index; //Custom index to associate minted tokens with contract addresses
 
@@ -25,10 +25,14 @@ contract FlowRollNft is ERC721, ERC721URIStorage, Ownable {
         uint8 houseEdge,
         uint256 revealCompensation,
         uint8 min,
-        uint8 max
+        uint8 max,
+        bool bypassSalePrice
     ) internal {
         require(index < MAXMINT); //Can't mint more than max mint!
-        require(msg.value == price, "Invalid mint price");
+        if (!bypassSalePrice) {
+            require(msg.value == price, "Invalid mint price");
+        }
+
         require(min < max, "min must be < than max");
         bytes32 parametersHash = hashRollParameters(
             ERC20Address,
@@ -91,7 +95,8 @@ contract FlowRollNft is ERC721, ERC721URIStorage, Ownable {
             houseEdge,
             revealCompensation,
             min,
-            max
+            max,
+            true
         );
     }
 
@@ -122,7 +127,8 @@ contract FlowRollNft is ERC721, ERC721URIStorage, Ownable {
             houseEdge,
             revealCompensation,
             min,
-            max
+            max,
+            false
         );
     }
 
