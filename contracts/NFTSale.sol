@@ -32,6 +32,7 @@ contract NFTSale is Ownable {
 
     constructor(uint256 _price) Ownable(msg.sender) {
         price = _price;
+        payee = payable(msg.sender);
     }
 
     function setNFTAddress(address to) external onlyOwner {
