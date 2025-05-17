@@ -9,13 +9,42 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
 
     mapping(uint256 => address) flowRollContractAddresses;
 
-    uint256 private price;
+    address private nftSale;
 
     mapping(bytes32 => bool) parametersExist;
 
     event NewFlowRoll(address indexed owner);
 
     address private randProvider;
+
+    constructor(
+        address _randProvider,
+        address _nftSale,
+        //These are the mint parameters in the constructor
+        address to,
+        address ERC20Address,
+        uint8 winnerPrizeShare,
+        uint256 diceRollCost,
+        uint8 houseEdge,
+        uint256 revealCompensation,
+        uint8 min,
+        uint8 max
+    ) ERC721("FlowRollNFT", "FRL") Ownable(msg.sender) {
+        nftSale = _nftSale;
+        index = 0;
+        MAXMINT = 1000; //hard coding a maximum of 1000 NFTs here
+        randProvider = _randProvider; // The randomness provider address
+        _flowRollMinter(
+            to,
+            ERC20Address,
+            winnerPrizeShare,
+            diceRollCost,
+            houseEdge,
+            revealCompensation,
+            min,
+            max
+        );
+    }
 
     function _flowRollMinter(
         address to,
@@ -25,13 +54,9 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
         uint8 houseEdge,
         uint256 revealCompensation,
         uint8 min,
-        uint8 max,
-        bool bypassSalePrice
+        uint8 max
     ) internal {
         require(index < MAXMINT); //Can't mint more than max mint!
-        if (!bypassSalePrice) {
-            require(msg.value == price, "Invalid mint price");
-        }
 
         require(min < max, "min must be < than max");
         bytes32 parametersHash = hashRollParameters(
@@ -70,41 +95,6 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
         emit NewFlowRoll(msg.sender);
     }
 
-    constructor(
-        address _randProvider,
-        uint256 _price,
-        //These are the mint parameters in the constructor
-        address to,
-        address ERC20Address,
-        uint8 winnerPrizeShare,
-        uint256 diceRollCost,
-        uint8 houseEdge,
-        uint256 revealCompensation,
-        uint8 min,
-        uint8 max
-    ) ERC721("FlowRollNFT", "FRL") Ownable(msg.sender) {
-        price = _price;
-        index = 0;
-        MAXMINT = 1000; //hard coding a maximum of 1000 NFTs here
-        randProvider = _randProvider; // The randomness provider address
-        _flowRollMinter(
-            to,
-            ERC20Address,
-            winnerPrizeShare,
-            diceRollCost,
-            houseEdge,
-            revealCompensation,
-            min,
-            max,
-            true
-        );
-    }
-
-    //The owner of the contract can update the mint price
-    function updatePrice(uint256 newPrice) external onlyOwner {
-        price = newPrice;
-    }
-
     function _baseURI() internal pure override returns (string memory) {
         return "https://flowroll.club/";
     }
@@ -118,7 +108,8 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
         uint256 revealCompensation,
         uint8 min,
         uint8 max
-    ) external payable {
+    ) external {
+        require(msg.sender == nftSale, "Only selling contract");
         _flowRollMinter(
             to,
             ERC20Address,
@@ -127,8 +118,7 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
             houseEdge,
             revealCompensation,
             min,
-            max,
-            false
+            max
         );
     }
 
@@ -138,6 +128,7 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
         return super.tokenURI(tokenId);
     }
 
+    //Use this on the front end to check the parameters
     function hashRollParameters(
         address ERC20Address,
         uint8 winnerPrizeShare,
@@ -146,7 +137,7 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
         uint256 revealCompensation,
         uint8 min,
         uint8 max
-    ) internal returns (bytes32) {
+    ) public pure returns (bytes32) {
         return
             keccak256(
                 abi.encodePacked(
