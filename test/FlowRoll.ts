@@ -12,8 +12,11 @@ describe("FlowRoll with mocked randomness dependency", function () {
     const [owner, account2] = await hre.viem.getWalletClients();
     const MockRandProvider = await hre.viem.deployContract("MockRandProvider");
     const publicClient = await hre.viem.getPublicClient();
-
     const SALEPRICE = parseEther("10");
+
+    //@ts-ignore - ignoring that it wants to deploy cadenceArch
+    const NFTSale = await hre.viem.deployContract("NFTSale", [SALEPRICE])
+
     const WINNERPRIZESHARE = 10; // 10% of the prizeVault goes to the winner
     const DICEROLLCOST = parseEther("0.01");
     const HOUSEEDGE = 10; //10% of the win or loss goes to the house
@@ -24,7 +27,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
     //@ts-ignore - ignoring that it wants to deploy cadenceArch instead of FlowRollNFT for some weird reason
     const FlowRollNFT = await hre.viem.deployContract("FlowRollNFT", [
       MockRandProvider.address,
-      SALEPRICE,
+      NFTSale.address,
       owner.account.address,
       zeroAddress, //Will use ETH for deposits
       WINNERPRIZESHARE,
@@ -47,9 +50,10 @@ describe("FlowRoll with mocked randomness dependency", function () {
 
   describe("Deployment", function () {
     it("Should all just deploy", function () {
-      const { MockRandProvider, publicClient, owner, account2, FlowRollNFT } = loadDeployFixture()
+      const { MockRandProvider, NFTSale, publicClient, owner, account2, FlowRollNFT } = loadDeployFixture()
 
       //TODO: Do the tests here
+      console.log("tests here")
     })
   })
 
