@@ -29,7 +29,7 @@ contract FlowRoll {
     address private ERC721Address;
     uint256 private ERC721Index;
 
-    uint256 private prizeVault;
+    uint256 public prizeVault;
 
     address private ERC20Address;
 
@@ -46,13 +46,13 @@ contract FlowRoll {
     uint256 revealCompensation;
 
     //The index of the last bet placed
-    uint256 lastBet;
+    uint256 public lastBet;
 
     //The last closed bet, the bets must be closed in order for fairness.
-    uint256 lastClosedBet;
+    uint256 public lastClosedBet;
 
     // The bets stored in a mapping in order
-    mapping(uint256 => DiceBets) bets;
+    mapping(uint256 => DiceBets) public bets;
 
     uint8 min;
     uint8 max;
@@ -103,6 +103,7 @@ contract FlowRoll {
         prizeVault = 0;
         //Sets if the dice rolls are played for ERC20 tokens or not. 0 address would be FLOW and a specified address would be ERC20
         ERC20Address = _ERC20Address;
+        winnerPrizeShare = _winnerPrizeShare;
         diceRollCost = _diceRollCost;
         houseEdge = _houseEdge;
         revealCompensation = _revealCompensation;
@@ -295,5 +296,21 @@ contract FlowRoll {
 
         //Returns the amount to send to the winner, the house edge
         return (vaultShare, houseEdge);
+    }
+
+    //Get contract parameters returns winnerPrizeShare,diceRollCost,houseEdge,revealCompensation,min,max
+    function getContractParameters()
+        external
+        view
+        returns (uint8, uint256, uint8, uint256, uint8, uint8)
+    {
+        return (
+            winnerPrizeShare,
+            diceRollCost,
+            houseEdge,
+            revealCompensation,
+            min,
+            max
+        );
     }
 }
