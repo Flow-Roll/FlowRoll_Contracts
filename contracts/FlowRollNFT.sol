@@ -5,9 +5,9 @@ import "./FlowRoll.sol";
 
 contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
     uint256 public MAXMINT; //Maximum amount of NFTs that can be minted
-    uint256 public index; //Custom index to associate minted tokens with contract addresses
+    uint256 public count; //Custom count to associate minted tokens with contract addresses
 
-    mapping(uint256 => address) flowRollContractAddresses;
+    mapping(uint256 => address) public flowRollContractAddresses;
 
     address private nftSale;
 
@@ -31,7 +31,7 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
         uint8 max
     ) ERC721("FlowRollNFT", "FRL") Ownable(msg.sender) {
         nftSale = _nftSale;
-        index = 0;
+        count = 0;
         MAXMINT = 1000; //hard coding a maximum of 1000 NFTs here
         randProvider = _randProvider; // The randomness provider address
         _flowRollMinter(
@@ -56,7 +56,7 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
         uint8 min,
         uint8 max
     ) internal {
-        require(index < MAXMINT); //Can't mint more than max mint!
+        require(count < MAXMINT); //Can't mint more than max mint!
 
         require(min < max, "min must be < than max");
         bytes32 parametersHash = hashRollParameters(
@@ -74,7 +74,7 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
 
         FlowRoll _flowRoll = new FlowRoll(
             randProvider,
-            index,
+            count,
             ERC20Address,
             winnerPrizeShare,
             diceRollCost,
@@ -84,13 +84,13 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
             max
         );
 
-        flowRollContractAddresses[index] = address(_flowRoll);
+        flowRollContractAddresses[count] = address(_flowRoll);
 
-        _safeMint(to, index);
+        _safeMint(to, count);
         //TODO: check if I need this:
-        // _setTokenURI(index, _tokenURIs); //The URI is the index, it will be accessed by index
+        // _setTokenURI(count, _tokenURIs); //The URI is the count, it will be accessed by count
 
-        index = index + 1;
+        count = count + 1;
 
         emit NewFlowRoll(msg.sender);
     }
