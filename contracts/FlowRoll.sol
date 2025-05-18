@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./RandProvider.sol";
 
 //The flow roll contract is a dice game created with flow on chain randomness
-
+//TODO: Add an extra fee to take out of the house fee as a protocol fee, maybe 5% of the house's payout.
 struct DiceBets {
     uint256 requestId; //The requestId for the randoness
     uint256 createdAtBlock;
@@ -237,6 +237,7 @@ contract FlowRoll {
         uint256 housePayment = calculateHouseEdge(feeFrom);
         address houseAddress = getAdmin();
         if (ERC20Address == address(0)) {
+            //TODO: add a protocol fee to the housePayment, 
             payable(houseAddress).sendValue(housePayment);
             //Sends the compensation to the address that revealed the dice roll
             payable(msg.sender).sendValue(revealCompensation);
@@ -255,6 +256,7 @@ contract FlowRoll {
     ) internal {
         address houseAddress = getAdmin();
         if (ERC20Address == address(0)) {
+            //TODO: add a protocol fee to the house payment
             payable(houseAddress).sendValue(housePayment);
             payable(msg.sender).sendValue(revealCompensation);
             payable(winnerAddress).sendValue(payout);
