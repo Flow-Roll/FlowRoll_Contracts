@@ -51,7 +51,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
   }
 
   describe("Deployment", function () {
-    it("Should all just deploy", async function () {
+    it("Should all deploy, mint first NFT and test basic functionality", async function () {
       const { MockRandProvider, NFTSale, publicClient, owner, account2, FlowRollNFT } = await loadFixture(deployFixture)
 
       //Check that there is one NFT minted for owner and has a flowRoll contract
