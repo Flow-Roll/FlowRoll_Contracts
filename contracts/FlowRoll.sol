@@ -20,6 +20,12 @@ struct DiceBets {
     uint256 payout;
 }
 
+interface IProtocolFeeProvider {
+    function protocolFee() external view returns (uint8);
+
+    function owner() public view returns (address);
+}
+
 contract FlowRoll {
     using Address for address payable;
     using SafeERC20 for IERC20;
@@ -118,6 +124,16 @@ contract FlowRoll {
         return IERC721(ERC721Address).ownerOf(ERC721Index);
     }
 
+    //The protocol fee percentage as fetched from the NFT contract
+    function getProtocolFee() internal view returns (uint8) {
+        return IProtocolFeeProvider(ERC721Address).protocolFee();
+    }
+
+    //The owner of the protocol fee
+    function protocolFeeOwner() internal view returns (address) {
+        return IProtocolFeeProvider(ERC721Address).owner();
+    }
+
     function fundPrizePoolFLOW(uint256 amount) external payable {
         require(ERC20Address == address(0), "Can't fund the pool");
         require(amount == msg.value, "Invalid deposit amount");
@@ -201,11 +217,11 @@ contract FlowRoll {
             bets[lastClosedBet].won = true;
             (
                 uint256 vaultShare,
-                uint256 housePayment
+                uint256 housePaymentWithoutProtocolFee
             ) = calculateWinnerPayoutWithFees();
             bets[lastClosedBet].payout = vaultShare;
             //Transfer the prize, the fee to the house and the reveal compensation
-            _transferWin(vaultShare, housePayment, bets[lastClosedBet].player);
+            _transferWin(vaultShare, housePaymentWithoutProtocolFee, bets[lastClosedBet].player);
             emit RollResult(
                 bets[lastClosedBet].player,
                 true,
@@ -234,15 +250,20 @@ contract FlowRoll {
     //Transfer fees will send the fees from the winner and loser bets
     //The feeFrom argument is either the diceRollCost for losers or taken from the winnerPrizeShare percentage calculation
     function _transferLossFees(uint256 feeFrom) internal {
-        uint256 housePayment = calculateHouseEdge(feeFrom);
+        //The house payment is what the owner of the NFT gets
+        //There is a protocol fee associated with all housePayments
+        uint256 housePaymentWithoutFee = calculateHouseEdge(feeFrom);
+        uint256 protocolFee = calculateProtocolFee(housePaymentWithoutFee);
+        uint256 housePayment = housePaymentWithoutFee - protocolFee;
         address houseAddress = getAdmin();
         if (ERC20Address == address(0)) {
-            //TODO: add a protocol fee to the housePayment, 
             payable(houseAddress).sendValue(housePayment);
+            payable(getProtocolFeeOwner()).sendValue(protocolFee);
             //Sends the compensation to the address that revealed the dice roll
             payable(msg.sender).sendValue(revealCompensation);
         } else {
             IERC20(ERC20Address).transfer(houseAddress, housePayment);
+            IERC20(ERC20Address).transfer(getProtocolFeeOwner(,protocolFee));
             IERC20(ERC20Address).transfer(msg.sender, revealCompensation);
         }
         //Update the prize pool
@@ -251,21 +272,24 @@ contract FlowRoll {
 
     function _transferWin(
         uint256 payout,
-        uint256 housePayment,
+        uint256 housePaymentWithoutProtocolFee,
         address winnerAddress
     ) internal {
+        uint256 protocolFee = calculateProtocolFee(housePaymentWithoutProtocolFee);
+        uint256 housePayment = housePaymentWithoutProtocolFee - protocolFee;
         address houseAddress = getAdmin();
         if (ERC20Address == address(0)) {
-            //TODO: add a protocol fee to the house payment
+            payable(getProtocolFeeOwner()).sendValue(protocolFee);
             payable(houseAddress).sendValue(housePayment);
             payable(msg.sender).sendValue(revealCompensation);
             payable(winnerAddress).sendValue(payout);
         } else {
+            IERC20(ERC20Address).transfer(getProtocolFeeOwner(), protocolFee);
             IERC20(ERC20Address).transfer(houseAddress, housePayment);
             IERC20(ERC20Address).transfer(msg.sender, revealCompensation);
             IERC20(ERC20Address).transfer(winnerAddress, payout);
         }
-        prizeVault -= (housePayment + revealCompensation + payout);
+        prizeVault -= (housePaymentWithoutProtocolFee + revealCompensation + payout);
     }
 
     function checkBet(uint8 bet) internal {
@@ -275,6 +299,14 @@ contract FlowRoll {
 
     function calculateHouseEdge(uint256 _of) internal view returns (uint256) {
         return (_of / 100) * houseEdge;
+    }
+
+    function calculateProtocolFee(
+        uint256 _houseEdgeFee
+    ) internal view returns (uint256) {
+        return
+            (houseEdgeFee / 100) *
+            IProtocolFeeProvider(ERC721Address).protocolFee();
     }
 
     function calculateWinnerPrizeShare(
