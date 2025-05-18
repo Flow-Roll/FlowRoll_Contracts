@@ -5,13 +5,13 @@ These are the smart contracts for Flow Roll Club, a gambling dice NFT project bu
 ✅ On-Chain Gambling Is DeFi:
 1. It is non-custodial (users control their funds via smart contracts).
 
-2. It operates on decentralized infrastructure (Deployed on Flow Blockchain
+2. It operates on decentralized infrastructure. Deployed on Flow Blockchain
 
 3. The logic is enforced by public smart contracts, not a central operator.
 
 4. Payouts are automatic and transparent.
 
-5. Often includes DeFi-like mechanics, token governance by NFT ownership.
+5. Includes DeFi-like mechanics, token governance by NFT ownership.
 
 
 ### How it works?
