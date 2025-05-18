@@ -80,10 +80,10 @@ contract NFTSale is Ownable {
     ) external payable {
         if (bytes(coupon).length != 0) {
             //Check if the coupon is valid and if not then revert
-            require(couponAddresses[coupon] != address(0), "Inalid coupon");
+            require(couponAddresses[coupon] != address(0), "Invalid coupon");
             //Calculate the percentage off
             uint256 newPrice = getNewPrice(coupon);
-            require(newPrice == msg.value, "Inavlid price with coupon");
+            require(newPrice == msg.value, "Invalid price with coupon");
             uint256 comission = getComission(newPrice, coupon);
             //The sale profit is newPrice minus the comission
             uint256 profit = newPrice - comission;
