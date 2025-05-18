@@ -17,6 +17,8 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
 
     address private randProvider;
 
+    uint8 public protocolFee; // It's a percentage fee, taken from the houseEdge
+
     constructor(
         address _randProvider,
         address _nftSale,
@@ -156,5 +158,11 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
         bytes4 interfaceId
     ) public view override(ERC721, ERC721URIStorage) returns (bool) {
         return super.supportsInterface(interfaceId);
+    }
+
+    //The owner of the NFT contract can change the protocol fee, it's maximum 20%
+    function setProtocolFee(uint8 to) external onlyOwner {
+        require(to <= 20, "20 max");
+        protocolFee = to;
     }
 }
