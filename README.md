@@ -57,26 +57,42 @@ The Fees earned by the house in the Dice Game will be transferred to the owner o
 `rollDiceFLOW` and `rollDiceERC20` functions will allow a player to deposit and make a bet, `revealDiceRoll` function will allow anyone to reveal the result of the dice roll in the next blocks.
 For security purposes the roll and the reveal can't be inside the same transaction. The revealCompensation is an incentive to earn a little income by helping the game chug along without a central server.
 
+## Payouts and Fees
+
 The payout and the fees on **WIN** are calculated as such:
 e.g:
 The dice roll cost is 1 FLOW
-It is added to the prize pool.
+It is added to the prize pool on bet.
 
 * With the prize pool at 100 FLOW,
 * winner prize share of 10% (means winner will get 10% of the 100 Flow )
 * a 0.01 reveal compensation
 * 10% house edge (NFT owner profit, taken from the winner prize)
+* There is a 5% protocol fee on the house edge, to sponsor website upkeep and further development
 
 The payout to the winner is: 
 8.99 FLOW
 A payout to reveal the win is 0.01 FLOW
-and the house earns 1 FLOW
+and the house earns 0.95 FLOW  with 0.05 FLOW protocol fee
 
 The fees taken on **LOSS** are calculated as such:
 
-The fee is taken from the Dice Roll Cost only, which was added to the prize pool on betting. 
+The fee is taken from the *Dice Roll Cost only*, which was added to the prize pool when bet. 
 
 With 1 FLOW as a dice roll cost,
 10% of house edge and 0.01 reveal compensation:
 
-The owner of the NFT receives 0.1 FLOW, the reveal compensation is 0.01 FLOW and 0.9 FLOW will stay in the prize pool from the dice roll cost.
+The owner of the NFT receives 0.095 FLOW, the reveal compensation is 0.01 FLOW and 0.9 FLOW will stay in the prize pool for the next betters.
+
+
+## User Experience
+
+A user will be able to purchase Dice Roll Game NFTs to operate them and deposit the starting prize pool.
+The NFT can be freely traded on any exchange and the prize pool deposit and the game activity both can influence it's price. It's an NFT with actual cash flow possibility.
+
+For gamblers, they can select the Dice Roll Game with the best parameters and prize pool and call a Betting function.
+After this the Bet is added to a list. A reveal transaction needs to be sent to get the results of the game and to transfer the payments out.
+
+It provides an extra income for reveal transaction senders so gamblers can get a little extra money back. 
+
+So players would be hunting for both the best prize pool and dice roll chances and for reveal transactions to earn a quick buck.
