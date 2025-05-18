@@ -38,7 +38,7 @@ The Admin can call setCoupon function to specify coupon parameters manually.
 
 The NFT token count is capped at MAXMINT which is 1000 currently. The MAXMINT can't be increased.
 
-The randomness is injected using the randProvider contract wich can be found in `RandProvider.sol` and for tests mocked with `MockRandProvider.sol` It uses the CadenceArch native contract to request randomness and reveal randomness for a previous block.
+The randomness is injected using the randProvider contract which can be found in `RandProvider.sol` and for tests mocked with `MockRandProvider.sol` It uses the CadenceArch native contract to request randomness and reveal randomness for a previous block.
 
 The FLowRollNFT will mint the first NFT token in the constructor, then only the NFTSale.sol contract can mint more NFTs afterwards. Once the parameters for the game are specified they can't be changed.
 
@@ -50,7 +50,7 @@ The NFT contract also enforces that each game parameters can only exist once, so
 
 The game is provably fair and completely verifiable and on-chain.
 
-The Fees earned by the house in the Dice Game will be transferred to the owner of the ERC721 correlated to this contract.
+The Fees earned by the house in the Dice Game will be transferred to the owner of the ERC721 connected to the dice game.
 
 `fundPrizePoolFLOW` and `fundPrizePoolERC20` functions are available to fund the dice game to get it started to incentivize players. 
 
@@ -77,6 +77,6 @@ The fees taken on **LOSS** are calculated as such:
 The fee is taken from the Dice Roll Cost only, which was added to the prize pool on betting. 
 
 With 1 FLOW as a dice roll cost,
-10% of house edge and 0.01 reveal compensation the 
+10% of house edge and 0.01 reveal compensation:
 
-The owner of the NFT receives 0.1 FLOW, the reveal compensation is 0.01 FLOW and the prize pool will get 0.9 FLOW
+The owner of the NFT receives 0.1 FLOW, the reveal compensation is 0.01 FLOW and 0.9 FLOW will stay in the prize pool from the dice roll cost.
