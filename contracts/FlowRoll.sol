@@ -23,7 +23,7 @@ struct DiceBets {
 interface IProtocolFeeProvider {
     function protocolFee() external view returns (uint8);
 
-    function owner() public view returns (address);
+    function owner() external view returns (address);
 }
 
 contract FlowRoll {
@@ -221,7 +221,11 @@ contract FlowRoll {
             ) = calculateWinnerPayoutWithFees();
             bets[lastClosedBet].payout = vaultShare;
             //Transfer the prize, the fee to the house and the reveal compensation
-            _transferWin(vaultShare, housePaymentWithoutProtocolFee, bets[lastClosedBet].player);
+            _transferWin(
+                vaultShare,
+                housePaymentWithoutProtocolFee,
+                bets[lastClosedBet].player
+            );
             emit RollResult(
                 bets[lastClosedBet].player,
                 true,
@@ -263,7 +267,7 @@ contract FlowRoll {
             payable(msg.sender).sendValue(revealCompensation);
         } else {
             IERC20(ERC20Address).transfer(houseAddress, housePayment);
-            IERC20(ERC20Address).transfer(getProtocolFeeOwner(,protocolFee));
+            IERC20(ERC20Address).transfer(getProtocolFeeOwner(), protocolFee);
             IERC20(ERC20Address).transfer(msg.sender, revealCompensation);
         }
         //Update the prize pool
@@ -275,7 +279,9 @@ contract FlowRoll {
         uint256 housePaymentWithoutProtocolFee,
         address winnerAddress
     ) internal {
-        uint256 protocolFee = calculateProtocolFee(housePaymentWithoutProtocolFee);
+        uint256 protocolFee = calculateProtocolFee(
+            housePaymentWithoutProtocolFee
+        );
         uint256 housePayment = housePaymentWithoutProtocolFee - protocolFee;
         address houseAddress = getAdmin();
         if (ERC20Address == address(0)) {
@@ -289,7 +295,9 @@ contract FlowRoll {
             IERC20(ERC20Address).transfer(msg.sender, revealCompensation);
             IERC20(ERC20Address).transfer(winnerAddress, payout);
         }
-        prizeVault -= (housePaymentWithoutProtocolFee + revealCompensation + payout);
+        prizeVault -= (housePaymentWithoutProtocolFee +
+            revealCompensation +
+            payout);
     }
 
     function checkBet(uint8 bet) internal {
@@ -301,11 +309,12 @@ contract FlowRoll {
         return (_of / 100) * houseEdge;
     }
 
+    //The protocol fee is a fee on the House.
     function calculateProtocolFee(
         uint256 _houseEdgeFee
     ) internal view returns (uint256) {
         return
-            (houseEdgeFee / 100) *
+            (_houseEdgeFee / 100) *
             IProtocolFeeProvider(ERC721Address).protocolFee();
     }
 
@@ -346,5 +355,9 @@ contract FlowRoll {
             min,
             max
         );
+    }
+
+    function getProtocolFeeOwner() internal view returns (address) {
+        return IProtocolFeeProvider(ERC721Address).owner();
     }
 }
