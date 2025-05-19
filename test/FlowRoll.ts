@@ -4,7 +4,7 @@ import {
 } from "@nomicfoundation/hardhat-toolbox-viem/network-helpers";
 import { expect } from "chai";
 import hre from "hardhat";
-import { getAddress, parseGwei, parseEther, zeroAddress } from "viem";
+import { getAddress, parseGwei, parseEther, zeroAddress, formatEther, formatGwei } from "viem";
 
 describe("FlowRoll with mocked randomness dependency", function () {
 
@@ -107,8 +107,96 @@ describe("FlowRoll with mocked randomness dependency", function () {
 
       expect(prizeVault).to.equal(fundAmount)
 
-      //TODO: Test rolling the dice...
-      //
+      // Test rolling the dice...
+
+      //Use the mock provider to set a new index for the randomness
+      await MockRandProvider.write.setIndex([1]);
+
+      //Roll the dice with 1 FLOW
+      //Betting that the next dice will be 2
+      await nr0FlowRollContract.write.rollDiceFLOW([2], { value: parseEther("0.01") });
+      //Should pass
+      //Check the prizeVault
+
+      prizeVault = await nr0FlowRollContract.read.prizeVault();
+
+      //It should have 1 ETH and the added dice roll cost
+      expect(prizeVault).to.equal(parseEther("1.01"));
+      contractBalance = await publicClient.getBalance({
+        address: flowRollContractAddress
+      });
+      expect(contractBalance).to.equal(parseEther("1.01"));
+
+      let lastBet = await nr0FlowRollContract.read.lastBet();
+      expect(lastBet).to.equal(1n);
+      let lastClosedBet = await nr0FlowRollContract.read.lastClosedBet();
+      expect(lastClosedBet).to.equal(0n);
+
+      const diceBet = await nr0FlowRollContract.read.bets([1n]);
+
+      expect(diceBet[0]).to.equal(1n) // The request Id
+      // expect(diceBet[1]).to.equal(6n) // The block number, I am not asserting in case something changes
+      expect(diceBet[2].toLowerCase()).to.equal(owner.account.address.toLowerCase())
+      expect(diceBet[3]).to.equal(2);
+      expect(diceBet[4]).to.equal(false) // It's still open
+      expect(diceBet[5]).to.equal(false) //Didn't win anything
+      expect(diceBet[6]).to.equal(0) //There was no number rolled ,yet
+      expect(diceBet[7]).to.equal(0n) //No payout
+
+      //reveal the dice roll, it should be a LOSS
+      await MockRandProvider.write.setRequestRandomness([1, 1]);
+
+      //Get a contract for account2 so it can request randomness
+      //@ts-ignore not cadence arch
+      let account2_nr0FlowRollInteraction = await hre.viem.getContractAt("FlowRoll", flowRollContractAddress, {
+        client: {
+          public: account2,
+          wallet: account2
+        }
+      })
+      //The owner will get the protocol fee and the houseEdge
+      let ownerETHBalance = await publicClient.getBalance({
+        address: owner.account.address
+      })
+
+      //Get the balance of Account 2
+
+      let account2Balance = await publicClient.getBalance({
+        address: account2.account.address
+      })
+
+      const revealGas = await account2_nr0FlowRollInteraction.estimateGas.revealDiceRoll();
+
+      const gasPrice = await publicClient.getGasPrice();
+
+      const gasConsumed = revealGas * gasPrice;
+
+      //This is how much of the reveal compensation is left after the gas payment
+      const revealLeftAfterGas = parseEther("0.001") - gasConsumed;
+
+      //@ts-ignore it should not have errors
+      await account2_nr0FlowRollInteraction.write.revealDiceRoll();
+
+
+      account2Balance = await publicClient.getBalance({
+        address: account2.account.address
+      })
+      //This tests the reveal compensation
+      expect(account2Balance).to.equal(parseEther("10000") + revealLeftAfterGas);
+
+      // //Get the balance of the owner first
+      let balanceBefore = ownerETHBalance
+
+      ownerETHBalance = await publicClient.getBalance({
+        address: owner.account.address
+      })
+
+      let balanceAfter = ownerETHBalance;
+      //The house edge is 10% of the dice roll cost
+      expect(formatEther(balanceAfter - balanceBefore)).to.equal("0.001");
+
+      //TODO: TEST a WIN but maybe in a different IT so it doesn't get too large...
+
     })
 
     //TODO: Test selling NFTs
