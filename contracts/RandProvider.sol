@@ -5,7 +5,7 @@ contract RandProvider is CadenceRandomConsumer {
         return _requestRandomness();
     }
 
-    function fulfilRandomnessRequest(
+    function fulfillRandomnessRequest(
         uint256 requestId,
         uint64 min,
         uint64 max

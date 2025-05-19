@@ -8,7 +8,7 @@ contract MockRandProvider {
         return index;
     }
 
-    function fulfilRandomnessRequest(
+    function fulfillRandomnessRequest(
         uint256 requestId,
         uint64 min,
         uint64 max
@@ -18,5 +18,9 @@ contract MockRandProvider {
 
     function setRequestRandomness(uint256 index, uint64 to) external {
         requests[index] = to;
+    }
+
+    function setIndex(uint64 _index) external {
+        index = _index;
     }
 }
