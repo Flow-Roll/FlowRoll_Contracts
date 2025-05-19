@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./RandProvider.sol";
 
 //The flow roll contract is a dice game created with flow on chain randomness
-//TODO: Add an extra fee to take out of the house fee as a protocol fee, maybe 5% of the house's payout.
 struct DiceBets {
     uint256 requestId; //The requestId for the randoness
     uint256 createdAtBlock;
@@ -202,7 +201,7 @@ contract FlowRoll {
             "Can't roll and reveal in the same block"
         );
         uint8 rolledRandomNumber = uint8(
-            randProvider.fulfilRandomnessRequest(
+            randProvider.fulfillRandomnessRequest(
                 bets[lastClosedBet].requestId,
                 min,
                 max
