@@ -51,7 +51,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
   }
 
   describe("Deployment", function () {
-    it("Should all deploy, mint first NFT and test basic functionality", async function () {
+    it("Should all deploy, mint first NFT and test basic functionality with a LOSS roll", async function () {
       const { MockRandProvider, NFTSale, publicClient, owner, account2, FlowRollNFT } = await loadFixture(deployFixture)
 
       //Check that there is one NFT minted for owner and has a flowRoll contract
@@ -177,7 +177,6 @@ describe("FlowRoll with mocked randomness dependency", function () {
       //@ts-ignore it should not have errors
       await account2_nr0FlowRollInteraction.write.revealDiceRoll();
 
-
       account2Balance = await publicClient.getBalance({
         address: account2.account.address
       })
@@ -193,9 +192,132 @@ describe("FlowRoll with mocked randomness dependency", function () {
 
       let balanceAfter = ownerETHBalance;
       //The house edge is 10% of the dice roll cost
-      expect(formatEther(balanceAfter - balanceBefore)).to.equal("0.001");
+      const houseEdgeEthTaken = "0.001"
+      expect(formatEther(balanceAfter - balanceBefore)).to.equal(houseEdgeEthTaken);
 
-      //TODO: TEST a WIN but maybe in a different IT so it doesn't get too large...
+      prizeVault = await nr0FlowRollContract.read.prizeVault();
+
+      contractBalance = await publicClient.getBalance({
+        address: flowRollContractAddress
+      });
+
+      expect(prizeVault).to.equal(contractBalance);
+
+      //The prizeVault should be the  the deposited 1 ETH + the dicerollCost minus the reveal compensation and minus the houseEdge that was taken from it
+      const vaultShouldBe = (parseEther("1") + parseEther("0.01")) - parseEther("0.001") - parseEther(houseEdgeEthTaken)
+      expect(prizeVault).to.equal(vaultShouldBe);
+
+      //Try to reveal again and fail
+      let failed = false;
+      let errmsg = "";
+      try {
+        await account2_nr0FlowRollInteraction.write.revealDiceRoll();
+      } catch (err) {
+        errmsg = err.details;
+
+        failed = true;
+      }
+
+      expect(failed).to.equal(true);
+      expect(errmsg.includes("All bets are finalized")).to.be.true;
+    })
+
+    it("Should test a win with the first deployed dice roll game", async function () {
+      const { MockRandProvider, NFTSale, publicClient, owner, account2, FlowRollNFT } = await loadFixture(deployFixture)
+
+      const flowRollContractAddress = await FlowRollNFT.read.flowRollContractAddresses([0]);
+      const nr0FlowRollContract = await hre.viem.getContractAt("FlowRoll", flowRollContractAddress);
+
+      //Fund the prize pool
+      const fundAmount = parseEther("1")
+      await nr0FlowRollContract.write.fundPrizePoolFLOW([fundAmount], { value: fundAmount });
+
+      //Use the mock provider to set a new index for the randomness
+      await MockRandProvider.write.setIndex([1]);
+      //Set the randomness index at 1 to 1
+      await MockRandProvider.write.setRequestRandomness([1, 1]);
+
+      //Roll the dice and bet on 1
+      await nr0FlowRollContract.write.rollDiceFLOW([1], { value: parseEther("0.01") });
+
+      let prizeVault = await nr0FlowRollContract.read.prizeVault();
+
+      let contractBalance = await publicClient.getBalance({
+        address: flowRollContractAddress
+      });
+
+      expect(prizeVault).to.equal(contractBalance);
+
+      expect(contractBalance).to.equal(parseEther("1.01"))
+
+      //Reveal and checking the gas
+      //Get a contract for account2 so it can request randomness
+      //@ts-ignore not cadence arch
+      let account2_nr0FlowRollInteraction = await hre.viem.getContractAt("FlowRoll", flowRollContractAddress, {
+        client: {
+          public: account2,
+          wallet: account2
+        }
+      })
+      //The owner will get the protocol fee and the houseEdge
+      let ownerETHBalance = await publicClient.getBalance({
+        address: owner.account.address
+      })
+
+      //Get the balance of Account 2
+
+      let account2Balance = await publicClient.getBalance({
+        address: account2.account.address
+      })
+
+      const revealGas = await account2_nr0FlowRollInteraction.estimateGas.revealDiceRoll();
+
+      const gasPrice = await publicClient.getGasPrice();
+
+      const gasConsumed = revealGas * gasPrice;
+
+      //This is how much of the reveal compensation is left after the gas payment
+      const revealLeftAfterGas = parseEther("0.001") - gasConsumed;
+
+      //@ts-ignore it should not have errors
+      await account2_nr0FlowRollInteraction.write.revealDiceRoll();
+
+      //Now the bet was a win, the owner should have the balance + the fee
+
+      account2Balance = await publicClient.getBalance({
+        address: account2.account.address
+      })
+      //This tests the reveal compensation
+      expect(account2Balance).to.equal(parseEther("10000") + revealLeftAfterGas);
+
+      // //Get the balance of the owner first
+      let balanceBefore = ownerETHBalance
+
+      ownerETHBalance = await publicClient.getBalance({
+        address: owner.account.address
+      })
+
+      //TODO: MAKE SURE THE CALCULATION FOR THE WINNER PAYOUT IS GOOD!!
+      //THE WIN SHOULD BE TAKEN FROM THE 1.01 ETH PRIZE POOL
+
+
+      let balanceAfter = ownerETHBalance;
+      //The house edge is 10% of the dice roll cost
+      //The owner gets the house edge + protocol fee , plus wins a percentage of the prize pool
+      //it should be 10% of 1 ETH because the fees go to this account!!
+      expect(formatEther(balanceAfter - balanceBefore)).to.equal("0.1");
+
+      prizeVault = await nr0FlowRollContract.read.prizeVault();
+
+      contractBalance = await publicClient.getBalance({
+        address: flowRollContractAddress
+      });
+
+      expect(prizeVault).to.equal(contractBalance);
+
+      //TODO: Check the payout of the 
+
+      // expect(prizeVault).to.equal()
 
     })
 
