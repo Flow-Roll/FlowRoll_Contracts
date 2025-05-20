@@ -214,6 +214,7 @@ contract FlowRoll {
             // Now close the bet
             bets[lastClosedBet].closed = true;
             bets[lastClosedBet].won = true;
+            bets[lastClosedBet].numberRolled = rolledRandomNumber;
             (
                 uint256 vaultShare,
                 uint256 housePaymentWithoutProtocolFee
@@ -238,6 +239,7 @@ contract FlowRoll {
             bets[lastClosedBet].closed = true;
             bets[lastClosedBet].won = false;
             bets[lastClosedBet].payout = 0;
+            bets[lastClosedBet].numberRolled = rolledRandomNumber;
             //Transfer the payouts to the house and the reveal compensation
             _transferLossFees(diceRollCost);
             emit RollResult(
@@ -336,7 +338,7 @@ contract FlowRoll {
         uint256 vaultShare = (prizeVaultShareWithoutFees - houseEdge) -
             revealCompensation;
 
-        //Returns the amount to send to the winner, the house edge
+        //aReturns the amount to send to the winner, the house edge
         return (vaultShare, houseEdge);
     }
 
