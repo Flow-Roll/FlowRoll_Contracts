@@ -297,14 +297,10 @@ describe("FlowRoll with mocked randomness dependency", function () {
         address: owner.account.address
       })
 
-      //TODO: MAKE SURE THE CALCULATION FOR THE WINNER PAYOUT IS GOOD!!
-      //THE WIN SHOULD BE TAKEN FROM THE 1.01 ETH PRIZE POOL
-
-
       let balanceAfter = ownerETHBalance;
       //The house edge is 10% of the dice roll cost
       //The owner gets the house edge + protocol fee , plus wins a percentage of the prize pool
-      //it should be 10% of 1 ETH because the fees go to this account!!
+      //The difference should be 10% of 1 ETH because the fees go to this account too.
       expect(formatEther(balanceAfter - balanceBefore)).to.equal("0.1");
 
       prizeVault = await nr0FlowRollContract.read.prizeVault();
@@ -315,15 +311,47 @@ describe("FlowRoll with mocked randomness dependency", function () {
 
       expect(prizeVault).to.equal(contractBalance);
 
-      //TODO: Check the payout of the 
+      expect(prizeVault).to.equal(parseEther("0.909"))
 
-      // expect(prizeVault).to.equal()
+      const diceBet = await nr0FlowRollContract.read.bets([1]);
+      expect(diceBet[0]).to.equal(1n); // The first request id
+      expect(diceBet[2].toLowerCase()).to.equal(owner.account.address.toLowerCase()); // The player's address
+      expect(diceBet[3]).to.equal(1); // The number that was bet on
+      expect(diceBet[4]).to.equal(true); // closed
+      expect(diceBet[5]).to.equal(true); // won
+      expect(diceBet[6]).to.equal(1); // number rolled
+
+      //10% of the 1.01 ETH,  the houseEdge which is 10% of the payout  minus the reveal compensation
+      const expectedPayout = parseEther("0.101") - parseEther("0.0101") - parseEther("0.001")
+      expect(diceBet[7]).to.equal(expectedPayout); // the payout is 10% of 1.01 ETH minus 10% houseFee (0.101) ,minus the reveal compensation 0.001
+
+      //Gonna make a new bet to test the last bet incrementing
+      //Use the mock provider to set a new index for the randomness
+      await MockRandProvider.write.setIndex([2]);
+      //Set the randomness index at 1 to 1
+      await MockRandProvider.write.setRequestRandomness([2, 2]);
+      //Roll the dice and bet on 1 again
+      await nr0FlowRollContract.write.rollDiceFLOW([1], { value: parseEther("0.01") });
+
+      const lastBet = await nr0FlowRollContract.read.lastBet();
+      const lastClosedBet = await nr0FlowRollContract.read.lastClosedBet();
+
+      expect(lastBet).to.equal(2n);
+      expect(lastClosedBet).to.equal(1n);
+
+      //the bets have successfully incremented. yay
 
     })
 
-    //TODO: Test selling NFTs
-    //TODO: Test the FlowRoll with an ERC20
-    //TODO: make sure to cover all requires and test all errors
+    it("Test FlowRoll with an ERC20", async function () {
+      const ERC20 = await hre.viem.deployContract("MockERC20", [parseEther("1000000")])
+    })
+
+    it("Test selling NFTs", async function () {
+      //TODO: implement the price feed MOCKER
+    })
+
+    it("Cover remaining error cases", async function () { })
   })
 
 });
