@@ -96,3 +96,9 @@ After this the Bet is added to a list. A reveal transaction needs to be sent to 
 It provides an extra income for reveal transaction senders so gamblers can get a little extra money back. 
 
 So players would be hunting for both the best prize pool and dice roll chances and for reveal transactions to earn a quick buck.
+
+## The coupon system
+The sale of the NFTs works with a coupon system that allows a third party advertiser to earn a commission while the user gets a certain percentage off the prize. 
+The owner must manually set the coupon code and it's parameters. The coupons can be only used once per address. If no coupon code is provided, then the buyer must pay the full price.
+
+Coupons will be pubished on social media for users to scoop up and get a good price on the NFTs and this is how incremental sale price is implemented.
