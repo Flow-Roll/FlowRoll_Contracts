@@ -2,6 +2,7 @@
 pragma solidity ^0.8.28;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
+import "hardhat/console.sol";
 
 interface IFlowRollNFT {
     function mintFlowRoll(
@@ -16,54 +17,88 @@ interface IFlowRollNFT {
     ) external;
 }
 
+interface IPriceFeed {
+    function getPrice() external returns (int64, int32);
+
+    function getEWMAPrice(
+        uint256 mantissa,
+        uint256 exponent
+    ) external returns (uint256);
+}
+
 contract NFTSale is Ownable {
     using Address for address payable;
     address payable private payee;
 
-    uint256 private price;
+    uint256 private USDcost;
+
+    int32 private expectedExpo;
+    uint8 private usedExpo;
 
     address private NFT;
 
-    mapping(string => address) couponAddresses;
+    address private priceFeedContract;
 
-    mapping(string => uint8) couponPercentageOff;
+    //The address that gets comission from a coupon payment
+    mapping(string => address) private couponComissionAddresses;
+    //The coupon percentage off is what the buyer gets off from the price
+    mapping(string => uint8) private couponPercentageOff;
+    //Comission is the percentage of comission transferred from the paid value
+    mapping(string => uint8) private couponComission;
+    //The amount of uses left from a coupon
+    mapping(string => uint8) private couponUsesLeft;
+    //Did the address already use that coupon? Only one per address
+    mapping(address => mapping(string => bool)) private addressUsedCoupon;
 
-    mapping(string => uint8) couponComission;
-
-    constructor(uint256 _price) Ownable(msg.sender) {
-        price = _price;
+    constructor(
+        uint256 _USDcost,
+        address _priceFeedContract
+    ) Ownable(msg.sender) {
+        USDcost = _USDcost;
         payee = payable(msg.sender);
+        require(_priceFeedContract != address(0), "Price feed must be set");
+        priceFeedContract = _priceFeedContract;
+        expectedExpo = -8;
+        usedExpo = 8;
     }
 
     function setNFTAddress(address to) external onlyOwner {
         NFT = to;
     }
 
-    function setPrice(uint256 to) external onlyOwner {
-        price = to;
+    function setUSDcost(uint256 to) external onlyOwner {
+        USDcost = to;
+    }
+
+    //A function to help with recovery if for some reason the Pyth oracle contract changes the expo
+    //It should never be used but it's an onlyowner function just in case it's needed
+    function setExpo(int32 _expectedExpo, uint8 _usedExpo) external onlyOwner {
+        expectedExpo = _expectedExpo;
+        usedExpo = _usedExpo;
     }
 
     function setCoupon(
         string calldata coupon,
         address recipient,
         uint8 percentageOff,
-        uint8 comission
+        uint8 comission,
+        uint8 _couponUsesLeft
     ) external onlyOwner {
         require(recipient != address(0), "invalid recipient");
-        couponAddresses[coupon] = recipient;
-        require(percentageOff < 20, "Max 2 percent off");
+        couponComissionAddresses[coupon] = recipient;
         couponPercentageOff[coupon] = percentageOff;
-        require(comission < 20, "Max 20 percent comission");
         couponComission[coupon] = comission;
+        couponUsesLeft[coupon] = _couponUsesLeft;
     }
 
     function getCoupon(
         string calldata coupon
-    ) external returns (address, uint8, uint8) {
+    ) external returns (address, uint8, uint8, uint8) {
         return (
-            couponAddresses[coupon],
+            couponComissionAddresses[coupon],
             couponPercentageOff[coupon],
-            couponComission[coupon]
+            couponComission[coupon],
+            couponUsesLeft[coupon]
         );
     }
 
@@ -80,18 +115,34 @@ contract NFTSale is Ownable {
     ) external payable {
         if (bytes(coupon).length != 0) {
             //Check if the coupon is valid and if not then revert
-            require(couponAddresses[coupon] != address(0), "Invalid coupon");
+            require(
+                couponComissionAddresses[coupon] != address(0),
+                "Invalid coupon"
+            );
+            require(couponUsesLeft[coupon] != 0, "Coupon was used up");
+            require(
+                addressUsedCoupon[msg.sender][coupon] == false,
+                "Address already used coupon"
+            );
+            //Substract a use from a coupon
+            couponUsesLeft[coupon] -= 1;
+            addressUsedCoupon[msg.sender][coupon] = true;
+
+            uint256 flowPrice = getExpectedPriceInFlow();
             //Calculate the percentage off
-            uint256 newPrice = getNewPrice(coupon);
+            uint256 newPrice = getReducedPrice(coupon, flowPrice);
             require(newPrice == msg.value, "Invalid price with coupon");
             uint256 comission = getComission(newPrice, coupon);
             //The sale profit is newPrice minus the comission
             uint256 profit = newPrice - comission;
             Address.sendValue(payee, profit);
             //Forward the payments
-            Address.sendValue(payable(couponAddresses[coupon]), comission);
+            Address.sendValue(
+                payable(couponComissionAddresses[coupon]),
+                comission
+            );
         } else {
-            require(msg.value == price, "Invalid price");
+            require(msg.value == getExpectedPriceInFlow(), "Invalid price");
             Address.sendValue(payee, msg.value);
         }
 
@@ -107,9 +158,31 @@ contract NFTSale is Ownable {
         );
     }
 
-    function getNewPrice(string calldata coupon) public view returns (uint256) {
-        uint256 subFromPrice = (price / 100) * couponPercentageOff[coupon];
-        return price - subFromPrice;
+    //This function is used both internally and externally, a view function to get the flow price from the oraclie price feed
+    function getUSDPriceInFlow() public returns (uint256) {
+        (int64 mantissa, int32 expo) = IPriceFeed(priceFeedContract).getPrice();
+
+        require(expo == expectedExpo, "The exponentiation is unexpected");
+        return
+            IPriceFeed(priceFeedContract).getEWMAPrice(
+                uint256(uint64(mantissa)),
+                usedExpo
+            );
+    }
+
+    //This function is used to get the expected price in flow
+    function getExpectedPriceInFlow() public returns (uint256) {
+        //TODO: THis needs to be better, this is wron do..e
+        return (USDcost * 1e18) / getUSDPriceInFlow();
+        //If 1 flow is getUSDPriceInFLow() then how much flow is 1000 USD?
+    }
+
+    function getReducedPrice(
+        string calldata coupon,
+        uint256 flowPrice
+    ) public view returns (uint256) {
+        uint256 subFromPrice = (flowPrice / 100) * couponPercentageOff[coupon];
+        return flowPrice - subFromPrice;
     }
 
     function getComission(
