@@ -165,4 +165,9 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
         require(to <= 20, "20 max");
         protocolFee = to;
     }
+
+    //This is an administrative function that allows changing the NFT sale contract, in case something goes wrong with it.
+    function changeNFTSaleContract(address to) external onlyOwner {
+        nftSale = to;
+    }
 }
