@@ -10,12 +10,16 @@ describe("FlowRoll with mocked randomness dependency", function () {
 
   async function deployFixture() {
     const [owner, account2] = await hre.viem.getWalletClients();
-    const MockRandProvider = await hre.viem.deployContract("MockRandProvider");
+    const MockFlowUSDPriceFeed = await hre.viem.deployContract("contracts/mock/MockPriceFeed.sol:MockFlowUSDPriceFeed")
+
+    //THE FLOW/USD RATE IS SET TO 0.4049444 FLOW is 1 USD
+    await MockFlowUSDPriceFeed.write.setPrice([4049444, -8]);
+
+    const MockRandProvider = await hre.viem.deployContract("contracts/mock/MockRandProvider.sol:MockRandProvider");
     const publicClient = await hre.viem.getPublicClient();
-    const SALEPRICE = parseEther("10");
+    const SALEPRICE = 1000; //1000 USD
 
-
-    const NFTSale = await hre.viem.deployContract("NFTSale", [SALEPRICE])
+    const NFTSale = await hre.viem.deployContract("contracts/NFTSale.sol:NFTSale", [SALEPRICE, MockFlowUSDPriceFeed.address])
 
     const WINNERPRIZESHARE = 10; // 10% of the prizeVault goes to the winner
     const DICEROLLCOST = parseEther("0.01");
@@ -23,7 +27,6 @@ describe("FlowRoll with mocked randomness dependency", function () {
     const REVEALCOMPENSATION = parseEther("0.001"); // Compensation for revealing the result of the dice roll
     const MIN = 1; //The minimum number that can be rolled
     const MAX = 6; //The max, it's a 6 sided dice for now
-
 
     const FlowRollNFT = await hre.viem.deployContract("FlowRollNFT", [
       MockRandProvider.address,
@@ -42,6 +45,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
 
     return {
       MockRandProvider,
+      MockFlowUSDPriceFeed,
       publicClient,
       owner,
       account2,
@@ -343,13 +347,29 @@ describe("FlowRoll with mocked randomness dependency", function () {
 
     })
 
-    it("Test FlowRoll with an ERC20", async function () {
-      const ERC20 = await hre.viem.deployContract("MockERC20", [parseEther("1000000")])
+    it("Test selling NFTs, test coupons", async function () {
+      const { NFTSale, publicClient, owner, account2, MockFlowUSDPriceFeed } = await loadFixture(deployFixture);
+
+      const priceFeed = await MockFlowUSDPriceFeed.read.getPrice();
+      expect(priceFeed[0]).to.equal(4049444n)
+      expect(priceFeed[1]).to.equal(-8);
+
+      const USDPriceInFLow = await NFTSale.read.getUSDPriceInFlow();
+      expect(USDPriceInFLow).to.equal(parseEther("0.04049444"));
+
+      const expectedPriceInFlow = await NFTSale.read.getExpectedPriceInFlow();
+      //TODO: NO THAT"S 1000 FLOW IS 40 USD...
+      expect(expectedPriceInFlow).to.equal(parseEther("40.49444"));
+
+
     })
 
-    it("Test selling NFTs", async function () {
-      //TODO: implement the price feed MOCKER
+
+    it("Test FlowRoll with an ERC20", async function () {
+      const ERC20 = await hre.viem.deployContract("MockERC20", [parseEther("1000000")])
+
     })
+
 
     it("Cover remaining error cases", async function () { })
   })
