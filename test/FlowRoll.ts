@@ -347,7 +347,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
 
     })
 
-    it("Test Oracle price feed. selling NFTs, test coupons", async function () {
+    it("Test Oracle price feed.", async function () {
       const { NFTSale, publicClient, owner, account2, MockFlowUSDPriceFeed } = await loadFixture(deployFixture);
 
       const priceFeed = await MockFlowUSDPriceFeed.read.getPrice();
@@ -359,11 +359,44 @@ describe("FlowRoll with mocked randomness dependency", function () {
       const expectedPriceInFlow = await NFTSale.read.getExpectedPriceInFlow();
       expect(expectedPriceInFlow).to.equal(parseEther("2469"));
 
-
     })
 
     it("Test coupons and selling NFTs", async function () {
-      const ERC20 = await hre.viem.deployContract("MockERC20", [parseEther("1000000")])
+      const { NFTSale, publicClient, owner, account2, MockFlowUSDPriceFeed } = await loadFixture(deployFixture);
+
+      //It should create coupon codes with different prices
+      const COUPON1 = "#GOWITHTHEFLOW"
+      const COUPON1ComissionAddress = account2.account.address;
+      const COUPON1PercentageOff = 10; // 10% off
+      const COUPON1Comission = 10; //10% comission
+      const COUPON1CouponUsesLeft = 2; // Only creating 2 coupons
+
+      await NFTSale.write.setCoupon(
+        [COUPON1,
+          COUPON1ComissionAddress,
+          COUPON1PercentageOff,
+          COUPON1Comission,
+          COUPON1CouponUsesLeft]
+      );
+
+      const couponParameters = await NFTSale.read.getCoupon([COUPON1]);
+      expect(couponParameters[0].toLowerCase()).to.equal(COUPON1ComissionAddress.toLowerCase())
+      expect(couponParameters[1]).to.equal(COUPON1PercentageOff)
+      expect(couponParameters[2]).to.equal(COUPON1Comission)
+      expect(couponParameters[3]).to.equal(COUPON1CouponUsesLeft)
+
+      const usedCuponAlready = await NFTSale.read.usedCouponAlready([COUPON1ComissionAddress, COUPON1])
+
+      expect(usedCuponAlready).to.equal(false);
+
+      //The sale price with the coupons should be calculated correctly
+      const fullPriceInFlow = await NFTSale.read.getExpectedPriceInFlow();
+      expect(fullPriceInFlow).to.equal(parseEther("2469"))
+      const reducedPrice = await NFTSale.read.getReducedPrice([COUPON1, fullPriceInFlow]);
+      expect(reducedPrice).to.equal(parseEther("2222.1"))
+      //The purchase should mint an NFT and it should have the dice game contracts
+      const comission = await NFTSale.read.getComission([reducedPrice, COUPON1])
+      expect(comission).to.equal(parseEther("222.21"));
 
     })
 
