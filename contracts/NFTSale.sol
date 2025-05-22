@@ -93,13 +93,20 @@ contract NFTSale is Ownable {
 
     function getCoupon(
         string calldata coupon
-    ) external returns (address, uint8, uint8, uint8) {
+    ) external view returns (address, uint8, uint8, uint8) {
         return (
             couponComissionAddresses[coupon],
             couponPercentageOff[coupon],
             couponComission[coupon],
             couponUsesLeft[coupon]
         );
+    }
+
+    function usedCouponAlready(
+        address addr,
+        string calldata coupon
+    ) external view returns (bool) {
+        return addressUsedCoupon[addr][coupon];
     }
 
     function buyNFT(
