@@ -172,9 +172,7 @@ contract NFTSale is Ownable {
 
     //This function is used to get the expected price in flow
     function getExpectedPriceInFlow() public returns (uint256) {
-        //TODO: THis needs to be better, this is wron do..e
-        return (USDcost * 1e18) / getUSDPriceInFlow();
-        //If 1 flow is getUSDPriceInFLow() then how much flow is 1000 USD?
+        return ((USDcost * 1e18) / getUSDPriceInFlow()) * 1e18;
     }
 
     function getReducedPrice(
