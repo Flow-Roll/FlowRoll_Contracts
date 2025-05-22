@@ -12,8 +12,8 @@ describe("FlowRoll with mocked randomness dependency", function () {
     const [owner, account2] = await hre.viem.getWalletClients();
     const MockFlowUSDPriceFeed = await hre.viem.deployContract("contracts/mock/MockPriceFeed.sol:MockFlowUSDPriceFeed")
 
-    //THE FLOW/USD RATE IS SET TO 0.4049444 FLOW is 1 USD
-    await MockFlowUSDPriceFeed.write.setPrice([4049444, -8]);
+    //THE FLOW/USD RATE IS SET TO 0.40494444 FLOW is 1 USD
+    await MockFlowUSDPriceFeed.write.setPrice([40494444, -8]);
 
     const MockRandProvider = await hre.viem.deployContract("contracts/mock/MockRandProvider.sol:MockRandProvider");
     const publicClient = await hre.viem.getPublicClient();
@@ -347,23 +347,25 @@ describe("FlowRoll with mocked randomness dependency", function () {
 
     })
 
-    it("Test selling NFTs, test coupons", async function () {
+    it("Test Oracle price feed. selling NFTs, test coupons", async function () {
       const { NFTSale, publicClient, owner, account2, MockFlowUSDPriceFeed } = await loadFixture(deployFixture);
 
       const priceFeed = await MockFlowUSDPriceFeed.read.getPrice();
-      expect(priceFeed[0]).to.equal(4049444n)
+      expect(priceFeed[0]).to.equal(40494444n)
       expect(priceFeed[1]).to.equal(-8);
 
       const USDPriceInFLow = await NFTSale.read.getUSDPriceInFlow();
-      expect(USDPriceInFLow).to.equal(parseEther("0.04049444"));
-
+      expect(USDPriceInFLow).to.equal(parseEther("0.40494444"));
       const expectedPriceInFlow = await NFTSale.read.getExpectedPriceInFlow();
-      //TODO: NO THAT"S 1000 FLOW IS 40 USD...
-      expect(expectedPriceInFlow).to.equal(parseEther("40.49444"));
+      expect(expectedPriceInFlow).to.equal(parseEther("2469"));
 
 
     })
 
+    it("Test coupons and selling NFTs", async function () {
+      const ERC20 = await hre.viem.deployContract("MockERC20", [parseEther("1000000")])
+
+    })
 
     it("Test FlowRoll with an ERC20", async function () {
       const ERC20 = await hre.viem.deployContract("MockERC20", [parseEther("1000000")])
