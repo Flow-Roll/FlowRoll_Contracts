@@ -32,11 +32,11 @@ contract FlowRoll {
     RandProvider private randProvider;
 
     address private ERC721Address;
-    uint256 private ERC721Index;
+    uint256 public ERC721Index;
 
     uint256 public prizeVault;
 
-    address private ERC20Address;
+    address public ERC20Address;
 
     //The percentage share of the prize for the winner
     uint8 winnerPrizeShare;
@@ -59,8 +59,8 @@ contract FlowRoll {
     // The bets stored in a mapping in order
     mapping(uint256 => DiceBets) public bets;
 
-    uint8 min;
-    uint8 max;
+    uint16 min;
+    uint16 max;
 
     //Event emitted when a bet is placed
     event RollPlaced(address player, uint8 bet, uint256 prizePool);
@@ -85,8 +85,8 @@ contract FlowRoll {
         uint256 _diceRollCost,
         uint8 _houseEdge,
         uint256 _revealCompensation,
-        uint8 _min,
-        uint8 _max
+        uint16 _min,
+        uint16 _max
     ) {
         require(_winnerPrizeShare <= 100, "Prize share is 100% max");
         require(_houseEdge <= 100, "House edge is 100% max");
@@ -301,7 +301,7 @@ contract FlowRoll {
             payout);
     }
 
-    function checkBet(uint8 bet) internal {
+    function checkBet(uint16 bet) internal {
         require(bet >= min, "Bet must be >= min");
         require(bet <= max, "Bet must be <= max");
     }
