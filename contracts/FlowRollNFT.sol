@@ -3,6 +3,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./FlowRoll.sol";
 
+//TODO: Maybe I do need enumerable...
 contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
     uint256 public MAXMINT; //Maximum amount of NFTs that can be minted
     uint256 public count; //Custom count to associate minted tokens with contract addresses
@@ -55,8 +56,8 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
         uint256 diceRollCost,
         uint8 houseEdge,
         uint256 revealCompensation,
-        uint8 min,
-        uint8 max
+        uint16 min,
+        uint16 max
     ) internal {
         require(count < MAXMINT); //Can't mint more than max mint!
 
@@ -108,8 +109,8 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
         uint256 diceRollCost,
         uint8 houseEdge,
         uint256 revealCompensation,
-        uint8 min,
-        uint8 max
+        uint16 min,
+        uint16 max
     ) external {
         require(msg.sender == nftSale, "Only selling contract");
         _flowRollMinter(
@@ -169,5 +170,12 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
     //This is an administrative function that allows changing the NFT sale contract, in case something goes wrong with it.
     function changeNFTSaleContract(address to) external onlyOwner {
         nftSale = to;
+    }
+
+    //Should take a normal number, not padded by 1e18!!
+    //It changes the max mint count to mint more NFTs
+    //TODO: Think about this, is it needed? or should it be capped
+    function changeMaxMint(uint256 to) external onlyOwner {
+        MAXMINT = to;
     }
 }
