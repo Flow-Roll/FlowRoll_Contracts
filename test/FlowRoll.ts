@@ -9,7 +9,7 @@ import { getAddress, parseGwei, parseEther, zeroAddress, formatEther, formatGwei
 describe("FlowRoll with mocked randomness dependency", function () {
 
   async function deployFixture() {
-    const [owner, account2] = await hre.viem.getWalletClients();
+    const [owner, account2, account3] = await hre.viem.getWalletClients();
     const MockFlowUSDPriceFeed = await hre.viem.deployContract("contracts/mock/MockPriceFeed.sol:MockFlowUSDPriceFeed")
 
     //THE FLOW/USD RATE IS SET TO 0.40494444 FLOW is 1 USD
@@ -50,6 +50,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
       publicClient,
       owner,
       account2,
+      account3,
       FlowRollNFT,
       NFTSale
     }
@@ -362,12 +363,12 @@ describe("FlowRoll with mocked randomness dependency", function () {
 
     })
 
-    it("Test coupons and selling NFTs", async function () {
-      const { NFTSale, publicClient, owner, account2, MockFlowUSDPriceFeed, FlowRollNFT } = await loadFixture(deployFixture);
+    it("Test coupons and selling NFTs,commission etc", async function () {
+      const { NFTSale, publicClient, owner, account2, account3, MockFlowUSDPriceFeed, FlowRollNFT } = await loadFixture(deployFixture);
 
       //It should create coupon codes with different prices
       const COUPON1 = "#GOWITHTHEFLOW"
-      const COUPON1ComissionAddress = account2.account.address;
+      const COUPON1ComissionAddress = account3.account.address;
       const COUPON1PercentageOff = 10; // 10% off
       const COUPON1Comission = 10; //10% comission
       const COUPON1CouponUsesLeft = 2; // Only creating 2 coupons
@@ -406,9 +407,20 @@ describe("FlowRoll with mocked randomness dependency", function () {
       const houseEdge = 10;
       const revealCompensation = parseEther("0.01")
 
-      //TODO: I need to check that the value was transferred correctly. 
+      const NFTSale_account2Connected = await hre.viem.getContractAt("NFTSale", NFTSale.address, {
+        client: {
+          public: account2,
+          wallet: account2
+        }
+      })
+
+      //Checking balances before and after
+      let ownerEthBalance = await publicClient.getBalance({
+        address: owner.account.address
+      })
+
       //Maybe I connect a different signer to the contract
-      await NFTSale.write.buyNFT([
+      await NFTSale_account2Connected.write.buyNFT([
         "",
         account2.account.address,
         zeroAddress,
@@ -422,6 +434,12 @@ describe("FlowRoll with mocked randomness dependency", function () {
         {
           value: parseEther("2469")
         });
+
+      let ownerEthBalanceAfter = await publicClient.getBalance({
+        address: owner.account.address
+      })
+
+      expect(ownerEthBalanceAfter - ownerEthBalance).to.equal(parseEther("2469"))
 
       // verify the account2 got the NFT
       const balanceOfAccount2 = await FlowRollNFT.read.balanceOf([account2.account.address])
@@ -447,7 +465,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
       let errorOccured = false
       let errorMessage = ""
       try {
-        await NFTSale.write.buyNFT([
+        await NFTSale_account2Connected.write.buyNFT([
           "",
           account2.account.address,
           zeroAddress,
@@ -469,8 +487,17 @@ describe("FlowRoll with mocked randomness dependency", function () {
       expect(errorOccured).to.equal(true);
       expect(errorMessage.includes("Duplicate parameters")).to.equal(true)
 
+      //Checking balances before and after
+      ownerEthBalance = await publicClient.getBalance({
+        address: owner.account.address
+      })
+
+      let account3AddressBalance = await publicClient.getBalance({
+        address: account3.account.address
+      })
+
       //Now I'm gonna mint one with the coupon
-      await NFTSale.write.buyNFT([
+      await NFTSale_account2Connected.write.buyNFT([
         COUPON1,
         account2.account.address,
         zeroAddress,
@@ -485,9 +512,21 @@ describe("FlowRoll with mocked randomness dependency", function () {
           value: reducedPrice
         });
 
-      //TODO: check that the payments have been transferred to the correct address
+      ownerEthBalanceAfter = await publicClient.getBalance({
+        address: owner.account.address
+      })
 
-      //TODO: check that the commission has been paid correctly!!
+      let account3AddressBalanceAfter = await publicClient.getBalance({
+        address: account3.account.address
+      })
+
+      const expectedComission = (reducedPrice / 100n) * BigInt(COUPON1Comission);
+
+      expect(ownerEthBalanceAfter - ownerEthBalance).to.equal(reducedPrice - expectedComission)
+
+      expect(account3AddressBalanceAfter - account3AddressBalance).to.equal(expectedComission);
+
+      //now I can see the commission has been paid correctly yay
 
     })
 
