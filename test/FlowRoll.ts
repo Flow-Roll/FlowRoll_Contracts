@@ -41,7 +41,8 @@ describe("FlowRoll with mocked randomness dependency", function () {
       MAX
     ])
 
-
+    //Must set the NFT contract address here on the selling contract
+    await NFTSale.write.setNFTAddress([FlowRollNFT.address])
 
     return {
       MockRandProvider,
@@ -362,7 +363,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
     })
 
     it("Test coupons and selling NFTs", async function () {
-      const { NFTSale, publicClient, owner, account2, MockFlowUSDPriceFeed } = await loadFixture(deployFixture);
+      const { NFTSale, publicClient, owner, account2, MockFlowUSDPriceFeed, FlowRollNFT } = await loadFixture(deployFixture);
 
       //It should create coupon codes with different prices
       const COUPON1 = "#GOWITHTHEFLOW"
@@ -398,11 +399,101 @@ describe("FlowRoll with mocked randomness dependency", function () {
       const comission = await NFTSale.read.getComission([reducedPrice, COUPON1])
       expect(comission).to.equal(parseEther("222.21"));
 
+      //Gonna buy an NFT and sends the correct amount of value.
+      //NOT GONNA USE COUPON, NO ERC20 either
+      const winnerprizeShare = 10;
+      const diceRollCost = parseEther("0.1")
+      const houseEdge = 10;
+      const revealCompensation = parseEther("0.01")
+
+      //TODO: I need to check that the value was transferred correctly. 
+      //Maybe I connect a different signer to the contract
+      await NFTSale.write.buyNFT([
+        "",
+        account2.account.address,
+        zeroAddress,
+        winnerprizeShare,
+        diceRollCost,
+        houseEdge,
+        revealCompensation,
+        1,
+        5
+      ],
+        {
+          value: parseEther("2469")
+        });
+
+      // verify the account2 got the NFT
+      const balanceOfAccount2 = await FlowRollNFT.read.balanceOf([account2.account.address])
+      expect(balanceOfAccount2).to.equal(1n);
+      const count = await FlowRollNFT.read.count();
+      expect(count).to.equal(2n);
+      const contractAddress = await FlowRollNFT.read.flowRollContractAddresses([1n]);
+
+      let account2_nr0FlowRollInteraction = await hre.viem.getContractAt("FlowRoll", contractAddress, {
+        client: {
+          public: account2,
+          wallet: account2
+        }
+      })
+      const contractParameters = await account2_nr0FlowRollInteraction.read.getContractParameters();
+      expect(contractParameters[0]).to.equal(winnerprizeShare)
+      expect(contractParameters[1]).to.equal(diceRollCost)
+      expect(contractParameters[2]).to.equal(houseEdge)
+      expect(contractParameters[3]).to.equal(revealCompensation)
+      expect(contractParameters[4]).to.equal(1)
+      expect(contractParameters[5]).to.equal(5)
+
+      let errorOccured = false
+      let errorMessage = ""
+      try {
+        await NFTSale.write.buyNFT([
+          "",
+          account2.account.address,
+          zeroAddress,
+          winnerprizeShare,
+          diceRollCost,
+          houseEdge,
+          revealCompensation,
+          1,
+          5
+        ],
+          {
+            value: parseEther("2469")
+          });
+
+      } catch (err) {
+        errorOccured = true;
+        errorMessage = err.details;
+      }
+      expect(errorOccured).to.equal(true);
+      expect(errorMessage.includes("Duplicate parameters")).to.equal(true)
+
+      //Now I'm gonna mint one with the coupon
+      await NFTSale.write.buyNFT([
+        COUPON1,
+        account2.account.address,
+        zeroAddress,
+        winnerprizeShare,
+        diceRollCost,
+        houseEdge,
+        revealCompensation,
+        3,
+        5
+      ],
+        {
+          value: reducedPrice
+        });
+
+      //TODO: check that the payments have been transferred to the correct address
+
+      //TODO: check that the commission has been paid correctly!!
+
     })
 
     it("Test FlowRoll with an ERC20", async function () {
       const ERC20 = await hre.viem.deployContract("MockERC20", [parseEther("1000000")])
-
+      //  Mint a flow roll NFT with an ERC20 token and test betting and payouts
     })
 
 
