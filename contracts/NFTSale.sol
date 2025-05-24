@@ -2,7 +2,6 @@
 pragma solidity ^0.8.28;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
-import "hardhat/console.sol";
 
 interface IFlowRollNFT {
     function mintFlowRoll(
