@@ -3,7 +3,6 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./FlowRoll.sol";
 
-//TODO: Maybe I do need enumerable...
 contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
     uint256 public MAXMINT; //Maximum amount of NFTs that can be minted
     uint256 public count; //Custom count to associate minted tokens with contract addresses
@@ -30,8 +29,8 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
         uint256 diceRollCost,
         uint8 houseEdge,
         uint256 revealCompensation,
-        uint8 min,
-        uint8 max
+        uint16 min,
+        uint16 max
     ) ERC721("FlowRollNFT", "FRL") Ownable(msg.sender) {
         nftSale = _nftSale;
         count = 0;
@@ -138,8 +137,8 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
         uint256 diceRollCost,
         uint8 houseEdge,
         uint256 revealCompensation,
-        uint8 min,
-        uint8 max
+        uint16 min,
+        uint16 max
     ) public pure returns (bytes32) {
         return
             keccak256(
@@ -174,7 +173,6 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
 
     //Should take a normal number, not padded by 1e18!!
     //It changes the max mint count to mint more NFTs
-    //TODO: Think about this, is it needed? or should it be capped
     function changeMaxMint(uint256 to) external onlyOwner {
         MAXMINT = to;
     }
