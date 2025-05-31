@@ -9,7 +9,7 @@ import { getAddress, parseGwei, parseEther, zeroAddress, formatEther, formatGwei
 describe("FlowRoll with mocked randomness dependency", function () {
 
   async function deployFixture() {
-    const [owner, account2, account3] = await hre.viem.getWalletClients();
+    const [owner, account2, account3, account4] = await hre.viem.getWalletClients();
     const MockFlowUSDPriceFeed = await hre.viem.deployContract("contracts/mock/MockPriceFeed.sol:MockFlowUSDPriceFeed")
 
     //THE FLOW/USD RATE IS SET TO 0.40494444 FLOW is 1 USD
@@ -51,6 +51,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
       owner,
       account2,
       account3,
+      account4,
       FlowRollNFT,
       NFTSale
     }
@@ -531,10 +532,248 @@ describe("FlowRoll with mocked randomness dependency", function () {
     })
 
     it("Test FlowRoll with an ERC20", async function () {
+
+      const { MockRandProvider, NFTSale, publicClient, owner, account2, account3, account4, MockFlowUSDPriceFeed, FlowRollNFT } = await loadFixture(deployFixture);
       const ERC20 = await hre.viem.deployContract("MockERC20", [parseEther("1000000")])
+      //I expect the balance of the owner to be 1000000 worth of mockerc20
+      const ownerERC20Balance = await ERC20.read.balanceOf([owner.account.address]);
+      expect(ownerERC20Balance).to.equal(parseEther("1000000"));
+
+      //Owner now sends some ERC20 to account2 and account3
+      await ERC20.write.transfer([account2.account.address, parseEther("1000")]);
+      await ERC20.write.transfer([account3.account.address, parseEther("1000")]);
+
+      let account2ERC20Balance = await ERC20.read.balanceOf([account2.account.address])
+      let account3ERC20Balance = await ERC20.read.balanceOf([account3.account.address])
+      expect(account2ERC20Balance).to.equal(parseEther("1000"))
+      expect(account3ERC20Balance).to.equal(parseEther("1000"))
+
       //  Mint a flow roll NFT with an ERC20 token and test betting and payouts
+
+      //Now pay for a Flow Roll Club NFT and create one that uses an ERC20 token, no coupon!
+      const winnerprizeShare = 10;
+      const diceRollCost = parseEther("10")
+      const houseEdge = 10;
+      const revealCompensation = parseEther("0.01")
+      const fullPriceInFlow = await NFTSale.read.getExpectedPriceInFlow();
+
+      await NFTSale.write.buyNFT([
+        "",
+        account2.account.address,
+        ERC20.address, // With the ERC20
+        winnerprizeShare,
+        diceRollCost,
+        houseEdge,
+        revealCompensation,
+        1,
+        5
+      ], { value: fullPriceInFlow });
+
+      // Get the flow roll gambling contract address
+
+      const flowRollContractAddress = await FlowRollNFT.read.flowRollContractAddresses([1n]) // it's at the first index
+      const erc20FlowRollContract = await hre.viem.getContractAt("FlowRoll", flowRollContractAddress);
+
+      const erc20AddressFromContract = await erc20FlowRollContract.read.ERC20Address();
+
+      expect(erc20AddressFromContract.toLowerCase()).to.equal(ERC20.address.toLowerCase())
+
+      //Now gonna do approvals and do a prize pool deposit
+
+
+      //Flow deposit should fail
+      let errorOccured = false;
+      let errorMessage = "";
+
+      try {
+        await erc20FlowRollContract.write.fundPrizePoolFLOW([parseEther("1")], { value: parseEther("1") })
+      } catch (err) {
+        errorOccured = true;
+        errorMessage = err.details;
+      }
+
+      expect(errorOccured).to.be.true;
+      expect(errorMessage.includes("Can't fund the pool")).to.be.true;
+
+      //Need to approve the spend first
+      await ERC20.write.approve([erc20FlowRollContract.address, parseEther("100")]);
+
+      await erc20FlowRollContract.write.fundPrizePoolERC20([parseEther("100")]);
+
+      const prizePool = await erc20FlowRollContract.read.prizeVault();
+
+      expect(prizePool).to.equal(parseEther("100"))
+
+      errorOccured = false;
+      errorMessage = ""
+      try {
+
+        await erc20FlowRollContract.write.rollDiceFLOW([2], { value: parseEther("1") })
+
+      } catch (err) {
+        errorOccured = true;
+        errorMessage = err.details;
+      }
+      expect(errorOccured).to.be.true
+      expect(errorMessage.includes("Invalid value sent")).to.be.true
+
+
+      //Gonna set the mocked randomness
+      //Use the mock provider to set a new index for the randomness
+      await MockRandProvider.write.setIndex([1]);
+      //Set the randomness index at 1 to 1
+      await MockRandProvider.write.setRequestRandomness([1, 1]);
+
+      //Now I approve and roll the dice
+      await ERC20.write.approve([erc20FlowRollContract.address, parseEther("10")])
+
+      const erc20FLowRollContract_account3Connected = await hre.viem.getContractAt("FlowRoll", erc20FlowRollContract.address, {
+        client: {
+          public: account3,
+          wallet: account3
+        }
+      })
+
+      const ERC20Account3 = await hre.viem.getContractAt("MockERC20", ERC20.address, {
+        client: {
+          public: account3,
+          wallet: account3,
+        }
+      })
+
+      await ERC20Account3.write.approve([erc20FLowRollContract_account3Connected.address, diceRollCost]);
+
+      //Gonna roll a win
+      await erc20FLowRollContract_account3Connected.write.rollDiceERC20([diceRollCost, 1]);
+
+      let lastBet = await erc20FlowRollContract.read.lastBet()
+      let lastClosedBet = await erc20FlowRollContract.read.lastClosedBet();
+
+      expect(lastBet).to.equal(1n)
+      expect(lastClosedBet).to.equal(0n);
+
+      let contractBalance = await ERC20.read.balanceOf([erc20FlowRollContract.address])
+      expect(contractBalance).to.equal(parseEther("110"))
+
+      const erc20FLowRollContract_account4Connected = await hre.viem.getContractAt("FlowRoll", erc20FlowRollContract.address, {
+        client: {
+          public: account4,
+          wallet: account4
+        }
+      })
+
+      let protocolFee = await FlowRollNFT.read.protocolFee();
+      expect(protocolFee).to.equal(0)
+
+      await FlowRollNFT.write.setProtocolFee([10])
+      protocolFee = await FlowRollNFT.read.protocolFee();
+      expect(protocolFee).to.equal(10)
+
+
+      //Account 1(owner) - protocol fee
+      //Account 2 - NFT owner, house fee
+      //Account 3 - Makes a bet and wins
+      //Account 4 - Rolls the dice
+
+      let ownerERC20BalanceBefore = await ERC20.read.balanceOf([owner.account.address]);
+      let account2ERC20BalanceBefore = await ERC20.read.balanceOf([account2.account.address]);
+      let account3ERC20BalanceBefore = await ERC20.read.balanceOf([account3.account.address]);
+      let account4ERC20BalanceBefore = await ERC20.read.balanceOf([account4.account.address]);
+      let prizePoolBefore = await erc20FLowRollContract_account3Connected.read.prizeVault();
+
+      await erc20FLowRollContract_account4Connected.write.revealDiceRoll();
+      //The owner of the NFT is account2, the protocol fee goes to account1 and the reveal transaction is sent by account3
+
+      lastBet = await erc20FlowRollContract.read.lastBet()
+      lastClosedBet = await erc20FlowRollContract.read.lastClosedBet();
+
+      expect(lastBet).to.equal(1n)
+      expect(lastClosedBet).to.equal(1n);
+
+      //Expect the changed balances
+      let ownerERC20BalanceAfter = await ERC20.read.balanceOf([owner.account.address]);
+      let account2ERC20BalanceAfter = await ERC20.read.balanceOf([account2.account.address]);
+      let account3ERC20BalanceAfter = await ERC20.read.balanceOf([account3.account.address]);
+      let account4ERC20BalanceAfter = await ERC20.read.balanceOf([account4.account.address]);
+      let prizePoolAfter = await erc20FLowRollContract_account3Connected.read.prizeVault();
+
+      let contractBalanceAfter = await ERC20.read.balanceOf([erc20FLowRollContract_account3Connected.address])
+
+      //Prize pool stays in sync with the balance
+      expect(prizePoolAfter).to.equal(contractBalanceAfter)
+
+      //The differences between previous and new balances should be the gains
+      let prizePoolDifference = (prizePoolBefore as bigint) - (prizePoolAfter as bigint);
+      let ownerBalanceChange = (ownerERC20BalanceAfter as bigint) - (ownerERC20BalanceBefore as bigint);
+      let account2BalanceChange = (account2ERC20BalanceAfter as bigint) - (account2ERC20BalanceBefore as bigint)
+      let account3BalanceChange = (account3ERC20BalanceAfter as bigint) - (account3ERC20BalanceBefore as bigint)
+      let account4BalanceChange = (account4ERC20BalanceAfter as bigint) - (account4ERC20BalanceBefore as bigint)
+
+      //The payout equals the prize pool difference
+      expect(ownerBalanceChange + account2BalanceChange + account3BalanceChange + account4BalanceChange).to.equal(prizePoolDifference)
+      //The payout is 10% of the difference,all the fees are taken from that 10% win
+      expect(ownerBalanceChange + account2BalanceChange + account3BalanceChange + revealCompensation).to.equal(((prizePoolBefore / 100n) * 10n))
+
+      //The difference is 10% of the prizePoolBefore
+      expect(prizePoolDifference).to.equal((prizePoolBefore / 100n) * 10n)
+
+      //Account 4 got compensated for revealing
+      expect(account4BalanceChange).to.equal(revealCompensation)
+
+      //Gonna set the mocked randomness
+      //Use the mock provider to set a new index for the randomness
+      await MockRandProvider.write.setIndex([2]);
+      //Set the randomness index at 1 to 1
+      await MockRandProvider.write.setRequestRandomness([2, 2]);
+
+      await ERC20Account3.write.approve([erc20FLowRollContract_account3Connected.address, diceRollCost]);
+      //Gonna roll a loss
+      await erc20FLowRollContract_account3Connected.write.rollDiceERC20([diceRollCost, 1]);
+
+      ownerERC20BalanceBefore = await ERC20.read.balanceOf([owner.account.address]);
+      account2ERC20BalanceBefore = await ERC20.read.balanceOf([account2.account.address]);
+      account3ERC20BalanceBefore = await ERC20.read.balanceOf([account3.account.address]);
+      account4ERC20BalanceBefore = await ERC20.read.balanceOf([account4.account.address]);
+      prizePoolBefore = await erc20FLowRollContract_account3Connected.read.prizeVault();
+
+      await erc20FLowRollContract_account4Connected.write.revealDiceRoll();
+      //The owner of the NFT is account2, the protocol fee goes to account1 and the reveal transaction is sent by account3
+
+      lastBet = await erc20FlowRollContract.read.lastBet()
+      lastClosedBet = await erc20FlowRollContract.read.lastClosedBet();
+
+      expect(lastBet).to.equal(2n)
+      expect(lastClosedBet).to.equal(2n);
+
+      //Expect the changed balances
+      ownerERC20BalanceAfter = await ERC20.read.balanceOf([owner.account.address]);
+      account2ERC20BalanceAfter = await ERC20.read.balanceOf([account2.account.address]);
+      account3ERC20BalanceAfter = await ERC20.read.balanceOf([account3.account.address]);
+      account4ERC20BalanceAfter = await ERC20.read.balanceOf([account4.account.address]);
+      prizePoolAfter = await erc20FLowRollContract_account3Connected.read.prizeVault();
+
+      contractBalanceAfter = await ERC20.read.balanceOf([erc20FLowRollContract_account3Connected.address])
+
+      //Expect that the prize pool stays in sync with the balance
+      expect(prizePoolAfter).to.equal(contractBalanceAfter)
+
+      prizePoolDifference = (prizePoolBefore as bigint) - (prizePoolAfter as bigint);
+      ownerBalanceChange = (ownerERC20BalanceAfter as bigint) - (ownerERC20BalanceBefore as bigint);
+      account2BalanceChange = (account2ERC20BalanceAfter as bigint) - (account2ERC20BalanceBefore as bigint)
+      account3BalanceChange = (account3ERC20BalanceAfter as bigint) - (account3ERC20BalanceBefore as bigint)
+      account4BalanceChange = (account4ERC20BalanceAfter as bigint) - (account4ERC20BalanceBefore as bigint)
+
+      //The account3 balance didn't change
+      expect(prizePoolDifference).to.equal(ownerBalanceChange + account2BalanceChange + account4BalanceChange)
+      expect(account3BalanceChange).to.equal(0n)
+
+      expect(account4BalanceChange).to.equal(revealCompensation);
+
+      //The payout is 10% of the dice roll cost and the reveal compensation added together
+      expect(prizePoolDifference).to.equal(revealCompensation + (diceRollCost / 100n) * 10n);
     })
 
+    it("Cover remaining admin functions", async function () { })
 
     it("Cover remaining error cases", async function () { })
   })
