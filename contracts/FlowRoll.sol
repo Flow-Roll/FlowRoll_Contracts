@@ -272,7 +272,7 @@ contract FlowRoll {
             IERC20(ERC20Address).transfer(msg.sender, revealCompensation);
         }
         //Update the prize pool
-        prizeVault -= (housePayment + revealCompensation);
+        prizeVault -= (housePaymentWithoutFee + revealCompensation);
     }
 
     function _transferWin(
@@ -334,19 +334,19 @@ contract FlowRoll {
         uint256 prizeVaultShareWithoutFees = calculateWinnerPrizeShare(
             prizeVault
         );
-        uint256 houseEdge = calculateHouseEdge(prizeVaultShareWithoutFees);
-        uint256 vaultShare = (prizeVaultShareWithoutFees - houseEdge) -
+        uint256 _houseEdge = calculateHouseEdge(prizeVaultShareWithoutFees);
+        uint256 vaultShare = (prizeVaultShareWithoutFees - _houseEdge) -
             revealCompensation;
 
         //aReturns the amount to send to the winner, the house edge
-        return (vaultShare, houseEdge);
+        return (vaultShare, _houseEdge);
     }
 
     //Get contract parameters returns winnerPrizeShare,diceRollCost,houseEdge,revealCompensation,min,max
     function getContractParameters()
         external
         view
-        returns (uint8, uint256, uint8, uint256, uint8, uint8)
+        returns (uint8, uint256, uint8, uint256, uint16, uint16)
     {
         return (
             winnerPrizeShare,
