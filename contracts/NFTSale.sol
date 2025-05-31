@@ -11,8 +11,8 @@ interface IFlowRollNFT {
         uint256 diceRollCost,
         uint8 houseEdge,
         uint256 revealCompensation,
-        uint8 min,
-        uint8 max
+        uint16 min,
+        uint16 max
     ) external;
 }
 
