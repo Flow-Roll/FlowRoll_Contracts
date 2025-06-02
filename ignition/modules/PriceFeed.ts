@@ -6,7 +6,9 @@ const PYTHCONTRACT_TESTNET = ""
 const FLOWUSD_PYTH_IDENTIFIER_TESTNET = ""
 
 const PriceFeedModule = buildModule("PriceFeed", (m) => {
-    const priceFeed = m.contract("PriceFeed", [PYTHCONTRACT_TESTNET, FLOWUSD_PYTH_IDENTIFIER_TESTNET], {})
+    const oracle_address = m.getParameter("pythContract", PYTHCONTRACT_TESTNET)
+    const identifier = m.getParameter("_flowusd_identifier", FLOWUSD_PYTH_IDENTIFIER_TESTNET)
+    const priceFeed = m.contract("PriceFeed", [oracle_address, identifier], {})
 
     return { priceFeed }
 })
