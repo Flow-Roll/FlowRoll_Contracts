@@ -34,7 +34,7 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
     ) ERC721("FlowRollNFT", "FRL") Ownable(msg.sender) {
         nftSale = _nftSale;
         count = 0;
-        MAXMINT = 1000; //hard coding a maximum of 1000 NFTs here
+        MAXMINT = 1000; //a maximum of 1000 NFTs here, it can change later
         randProvider = _randProvider; // The randomness provider address
         _flowRollMinter(
             to,
@@ -173,7 +173,9 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
 
     //Should take a normal number, not padded by 1e18!!
     //It changes the max mint count to mint more NFTs
+    //Maximum is 10k. It's hard to index them so can't be too much.
     function changeMaxMint(uint256 to) external onlyOwner {
+        require(to < 10000, "Maximum 10k");
         MAXMINT = to;
     }
 }
