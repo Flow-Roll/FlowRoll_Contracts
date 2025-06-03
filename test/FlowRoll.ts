@@ -773,9 +773,20 @@ describe("FlowRoll with mocked randomness dependency", function () {
       expect(prizePoolDifference).to.equal(revealCompensation + (diceRollCost / 100n) * 10n);
     })
 
-    it("Cover remaining admin functions", async function () { })
+    it("Cover remaining admin functions", async function () {
+      //Test NFTSale setExpo can be only called by owner
 
-    it("Cover remaining error cases", async function () { })
+      //test setUSDCost
+
+      //FlowRollNFT test that changeNFTSaleContract can be only called by owner
+
+      //FlowROllNFT set changeMaxMint set
+
+     })
+
+    it("Cover remaining error cases", async function () {
+      //TODO: add errors here that were not tested before
+     })
   })
 
 });
