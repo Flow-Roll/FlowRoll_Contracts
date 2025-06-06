@@ -770,9 +770,113 @@ describe("FlowRoll with mocked randomness dependency", function () {
     })
 
     it("test betType, win evaluation with modulo", async function () {
-      //TODO: try to make with betType 1, it fails
+      const { MockRandProvider, NFTSale, publicClient, owner, account2, account3, FlowRollNFT } = await loadFixture(deployFixture)
 
-      //TODO: test it with different betTypes for modulo parameters
+      //try to make with betType 1, it fails
+      const fullPriceInFlow = await NFTSale.read.getExpectedPriceInFlow();
+
+      let errorOccured = false;
+      let errorMessage = ""
+      try {
+
+        await NFTSale.write.buyNFT([
+          "",
+          owner.account.address,
+          zeroAddress,
+          10,
+          parseEther("1"),
+          10,
+          parseEther("0.01"),
+          [1, 5, 1]
+        ], { value: fullPriceInFlow })
+      } catch (err) {
+        errorOccured = true;
+        errorMessage = err.details;
+
+      }
+      expect(errorOccured).to.be.true;
+      expect(errorMessage.includes("betType 1 is invalid")).to.equal(true);
+
+      await NFTSale.write.buyNFT([
+        "",
+        owner.account.address,
+        zeroAddress,
+        10,
+        parseEther("1"),
+        10,
+        parseEther("0.01"),
+        [1, 6, 3] // lets modulo by 3, so winning number is 3 or 6
+      ], { value: fullPriceInFlow })
+
+      //It should be index 1n
+
+      const contractAddress = await FlowRollNFT.read.flowRollContractAddresses([1n])
+
+      const flowRollContract = await hre.viem.getContractAt("FlowRoll", contractAddress);
+
+      const contractParameters = await flowRollContract.read.getContractParameters();
+
+      expect(contractParameters.at(4)).to.equal(1)
+      expect(contractParameters.at(5)).to.equal(6)
+      expect(contractParameters.at(6)).to.equal(3)
+
+
+      //Try a win
+      await MockRandProvider.write.setIndex([1]);
+      await MockRandProvider.write.setRequestRandomness([1, 3]) // Should win
+
+      await flowRollContract.write.fundPrizePoolFLOW([parseEther("100")], { value: parseEther("100") })
+      errorOccured = false;
+      try {
+        await flowRollContract.write.rollDiceFLOW([3], { value: parseEther("1") });
+      } catch (err) {
+        errorOccured = true;
+        errorMessage = err.details
+      }
+
+      expect(errorOccured).to.be.true;
+      expect(errorMessage.includes("Not accepting custom bets")).be.true;
+
+      await flowRollContract.write.rollDiceFLOW([0], { value: parseEther("1") })
+
+      await flowRollContract.write.revealDiceRoll();
+
+      let lastBet = await flowRollContract.read.lastBet();
+      let lastRoll = await flowRollContract.read.bets([lastBet]);
+      //Won because  3 % 3 is zero
+      expect(lastRoll.at(5)).to.be.true;
+
+      //Gonna roll a loss
+
+      await MockRandProvider.write.setIndex([2]);
+      await MockRandProvider.write.setRequestRandomness([2, 2]);
+      await flowRollContract.write.rollDiceFLOW([0], { value: parseEther("1") });
+      await flowRollContract.write.revealDiceRoll();
+      lastBet = await flowRollContract.read.lastBet();
+      lastRoll = await flowRollContract.read.bets([lastBet]);
+      //Lost because  2 % 3 is 2
+      expect(lastRoll.at(5)).to.be.false;
+
+      await MockRandProvider.write.setIndex([3]);
+      await MockRandProvider.write.setRequestRandomness([3, 5]);
+      await flowRollContract.write.rollDiceFLOW([0], { value: parseEther("1") });
+      await flowRollContract.write.revealDiceRoll();
+      lastBet = await flowRollContract.read.lastBet();
+      lastRoll = await flowRollContract.read.bets([lastBet]);
+      //Lost because  5 % 3 is 2
+      expect(lastRoll.at(5)).to.be.false;
+
+      await MockRandProvider.write.setIndex([4]);
+      await MockRandProvider.write.setRequestRandomness([4, 6]);
+      await flowRollContract.write.rollDiceFLOW([0], { value: parseEther("1") });
+      await flowRollContract.write.revealDiceRoll();
+      lastBet = await flowRollContract.read.lastBet();
+      lastRoll = await flowRollContract.read.bets([lastBet]);
+      //Lost because  5 % 3 is 2
+      expect(lastRoll.at(5)).to.be.true;
+
+
+
     })
 
 
