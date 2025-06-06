@@ -27,6 +27,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
     const REVEALCOMPENSATION = parseEther("0.001"); // Compensation for revealing the result of the dice roll
     const MIN = 1; //The minimum number that can be rolled
     const MAX = 6; //The max, it's a 6 sided dice for now
+    const BETTYPE = 0; // The bet type is zero so whatever the user bets needs to win
 
     const FlowRollNFT = await hre.viem.deployContract("FlowRollNFT", [
       MockRandProvider.address,
@@ -37,8 +38,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
       DICEROLLCOST,
       HOUSEEDGE,
       REVEALCOMPENSATION,
-      MIN,
-      MAX
+      [MIN, MAX, BETTYPE]
     ])
 
     //Must set the NFT contract address here on the selling contract
@@ -429,8 +429,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
         diceRollCost,
         houseEdge,
         revealCompensation,
-        1,
-        5
+        [1, 5, 0]
       ],
         {
           value: parseEther("2469")
@@ -474,8 +473,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
           diceRollCost,
           houseEdge,
           revealCompensation,
-          1,
-          5
+          [1, 5, 0]
         ],
           {
             value: parseEther("2469")
@@ -506,8 +504,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
         diceRollCost,
         houseEdge,
         revealCompensation,
-        3,
-        5
+        [3, 5, 0]
       ],
         {
           value: reducedPrice
@@ -565,8 +562,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
         diceRollCost,
         houseEdge,
         revealCompensation,
-        1,
-        5
+        [1, 5, 0]
       ], { value: fullPriceInFlow });
 
       // Get the flow roll gambling contract address
@@ -773,6 +769,13 @@ describe("FlowRoll with mocked randomness dependency", function () {
       expect(prizePoolDifference).to.equal(revealCompensation + (diceRollCost / 100n) * 10n);
     })
 
+    it("test betType, win evaluation with modulo", async function () {
+      //TODO: try to make with betType 1, it fails
+
+      //TODO: test it with different betTypes for modulo parameters
+    })
+
+
     it("Cover remaining admin functions", async function () {
       //Test NFTSale setExpo can be only called by owner
 
@@ -782,11 +785,11 @@ describe("FlowRoll with mocked randomness dependency", function () {
 
       //FlowROllNFT set changeMaxMint set
 
-     })
+    })
 
     it("Cover remaining error cases", async function () {
       //TODO: add errors here that were not tested before
-     })
+    })
   })
 
 });
