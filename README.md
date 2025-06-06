@@ -28,7 +28,8 @@ The NFT parameters contain the dice game parameters, including:
 3. How much does a dice roll cost?
 4. How much percentage does the NFT holder earn?
 5. The compensation for revealing the dice roll (dice rolls use a commit-reveal mechanism to avoid cheating and this is the reveal incentive) 
-6. The dice min and max numbers (can be 1-6 or 1-12 etc.. it's a uint8)
+6. The dice min and max numbers (can be 1-6 or 1-12 etc.. it's a uint16)
+7. The bet Type, which is encoded into a single uint16 number, passed together with min and max as betParameters
 
 Then the NFT will be minted on successful payment.
 
@@ -56,6 +57,17 @@ The Fees earned by the house in the Dice Game will be transferred to the owner o
 
 `rollDiceFLOW` and `rollDiceERC20` functions will allow a player to deposit and make a bet, `revealDiceRoll` function will allow anyone to reveal the result of the dice roll in the next blocks.
 For security purposes the roll and the reveal can't be inside the same transaction. The revealCompensation is an incentive to earn a little income by helping the game chug along without a central server.
+
+## Evaluating a win
+
+When creating an NFT and deploying an new game, the betType must be specified together with the min and max values.
+The betType encodes how the winner is evaluated.
+If betType == 0, then the player must place a bet and guess exactly the winning number to get a reward
+betType ==1 is invalid, you will understand why from the next point
+betType == 2 ...N < Max, the winning number pulled is modulod with betType and compared to zero to check for winning number. This allows the creation of games where multiple dice rolls are winner, not just a single one. The player doesn't try to roll the bet, it tries to roll a predetermined winner number.
+
+Example: Min =1; Max = 18; betType = 6; Then the winner numbers are: 6, 12, 18
+Or other scenario: Min 1, Max = 2000, betType = 2, Then every even number between 1 and 2000 is a winner.
 
 ## Payouts and Fees
 
