@@ -29,8 +29,7 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
         uint256 diceRollCost,
         uint8 houseEdge,
         uint256 revealCompensation,
-        uint16 min,
-        uint16 max
+        uint16[3] memory betParams
     ) ERC721("FlowRollNFT", "FRL") Ownable(msg.sender) {
         nftSale = _nftSale;
         count = 0;
@@ -43,8 +42,7 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
             diceRollCost,
             houseEdge,
             revealCompensation,
-            min,
-            max
+            betParams
         );
     }
 
@@ -55,20 +53,18 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
         uint256 diceRollCost,
         uint8 houseEdge,
         uint256 revealCompensation,
-        uint16 min,
-        uint16 max
+        uint16[3] memory betParams
     ) internal {
         require(count < MAXMINT); //Can't mint more than max mint!
-
-        require(min < max, "min must be < than max");
         bytes32 parametersHash = hashRollParameters(
             ERC20Address,
             winnerPrizeShare,
             diceRollCost,
             houseEdge,
             revealCompensation,
-            min,
-            max
+            betParams[0],
+            betParams[1],
+            betParams[2]
         );
         // Check that an NFT with the parameters exists already, do not allow two to have the same parameters
         require(!parametersExist[parametersHash], "Duplicate parameters");
@@ -82,8 +78,7 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
             diceRollCost,
             houseEdge,
             revealCompensation,
-            min,
-            max
+            betParams
         );
 
         flowRollContractAddresses[count] = address(_flowRoll);
@@ -108,8 +103,7 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
         uint256 diceRollCost,
         uint8 houseEdge,
         uint256 revealCompensation,
-        uint16 min,
-        uint16 max
+        uint16[3] memory betParams //[0] = min, [1] = max, [2] = betType
     ) external {
         require(msg.sender == nftSale, "Only selling contract");
         _flowRollMinter(
@@ -119,8 +113,7 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
             diceRollCost,
             houseEdge,
             revealCompensation,
-            min,
-            max
+            betParams
         );
     }
 
@@ -138,7 +131,8 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
         uint8 houseEdge,
         uint256 revealCompensation,
         uint16 min,
-        uint16 max
+        uint16 max,
+        uint16 betType
     ) public pure returns (bytes32) {
         return
             keccak256(
@@ -149,7 +143,8 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
                     houseEdge,
                     revealCompensation,
                     min,
-                    max
+                    max,
+                    betType
                 )
             );
     }

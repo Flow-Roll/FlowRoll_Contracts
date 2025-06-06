@@ -11,8 +11,7 @@ interface IFlowRollNFT {
         uint256 diceRollCost,
         uint8 houseEdge,
         uint256 revealCompensation,
-        uint16 min,
-        uint16 max
+        uint16[3] memory betParams
     ) external;
 }
 
@@ -116,8 +115,7 @@ contract NFTSale is Ownable {
         uint256 diceRollCost,
         uint8 houseEdge,
         uint256 revealCompensation,
-        uint16 min,
-        uint16 max
+        uint16[3] memory betParams
     ) external payable {
         if (bytes(coupon).length != 0) {
             //Check if the coupon is valid and if not then revert
@@ -159,8 +157,7 @@ contract NFTSale is Ownable {
             diceRollCost,
             houseEdge,
             revealCompensation,
-            min,
-            max
+            betParams
         );
     }
 

@@ -6,16 +6,15 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./RandProvider.sol";
-
 //The flow roll contract is a dice game created with flow on chain randomness
 struct DiceBets {
     uint256 requestId; //The requestId for the randoness
     uint256 createdAtBlock;
     address player; //The address that is betting
-    uint8 bet; //The number to bet on
+    uint16 bet; //The number to bet on
     bool closed;
     bool won;
-    uint8 numberRolled;
+    uint16 numberRolled;
     uint256 payout;
 }
 
@@ -62,14 +61,21 @@ contract FlowRoll {
     uint16 min;
     uint16 max;
 
+    uint16 betType; // Specifies the bet type
+    //If the betType is 0 then the player makes the bet on which number he thinks is the winner
+    //betType 1 is invalid, as it can't be used for modulo because every number returns 1
+    //betType 2...n is then moduloed with the random number and checed if it equals zero, this way multiple winning numbers are possible
+    //If betType is not 0 then the player doesn't need to explicitly bet on a number, the winner numbers are pre-determined.
+    //Example is  betType is 2, min = 1 max = 6 then the winner numbers are 2, 4,6 because 4 % betType is 0
+
     //Event emitted when a bet is placed
-    event RollPlaced(address player, uint8 bet, uint256 prizePool);
+    event RollPlaced(address player, uint16 bet, uint256 prizePool);
 
     //Event emitted when a roll is completed
     event RollResult(
         address player,
         bool won,
-        uint8 numberRolled,
+        uint16 numberRolled,
         uint256 payout,
         uint256 newPrizePool
     );
@@ -85,8 +91,7 @@ contract FlowRoll {
         uint256 _diceRollCost,
         uint8 _houseEdge,
         uint256 _revealCompensation,
-        uint16 _min,
-        uint16 _max
+        uint16[3] memory betParams //betParams[0] == is min, betParams[1] == is max, betParams ==[2] is betType
     ) {
         require(_winnerPrizeShare <= 100, "Prize share is 100% max");
         require(_houseEdge <= 100, "House edge is 100% max");
@@ -99,6 +104,15 @@ contract FlowRoll {
             _revealCompensation + calculateHouseEdge(_diceRollCost) <
                 _diceRollCost,
             "invalid House edge or revealCompensation"
+        );
+
+        require(betParams[2] != 1, "betType 1 is invalid");
+
+        require(betParams[0] < betParams[1], "min must be < than max");
+        require(betParams[0] >= 0, "Min can't be negative");
+        require(
+            betParams[2] <= betParams[1],
+            "Bet type can't be more than max"
         );
 
         randProvider = RandProvider(_randProvider);
@@ -114,8 +128,9 @@ contract FlowRoll {
         revealCompensation = _revealCompensation;
         lastBet = 0;
         lastClosedBet = 0;
-        min = _min;
-        max = _max;
+        min = betParams[0];
+        max = betParams[1];
+        betType = betParams[2];
     }
 
     //The admin of the FlowRoll contract is always the owner of the NFT that minted it
@@ -148,9 +163,10 @@ contract FlowRoll {
         emit PrizePoolFunded(amount);
     }
 
-    function rollDiceFLOW(uint8 bet) external payable {
+    function rollDiceFLOW(uint16 bet) external payable {
         require(msg.value == diceRollCost, "Invalid value sent");
         require(ERC20Address == address(0), "Only FLow");
+
         checkBet(bet); // Check that the bet is between min and max
         //Add the flow to the winnerPrizeShare
         prizeVault += diceRollCost;
@@ -172,7 +188,7 @@ contract FlowRoll {
         emit RollPlaced(msg.sender, bet, prizeVault);
     }
 
-    function rollDiceERC20(uint256 betAmount, uint8 bet) external {
+    function rollDiceERC20(uint256 betAmount, uint16 bet) external {
         require(betAmount == diceRollCost, "Invalid ");
         require(ERC20Address != address(0), "Must use Flow");
         checkBet(bet);
@@ -200,7 +216,7 @@ contract FlowRoll {
             block.number > bets[lastClosedBet].createdAtBlock,
             "Can't roll and reveal in the same block"
         );
-        uint8 rolledRandomNumber = uint8(
+        uint16 rolledRandomNumber = uint16(
             randProvider.fulfillRandomnessRequest(
                 bets[lastClosedBet].requestId,
                 min,
@@ -209,7 +225,7 @@ contract FlowRoll {
         );
 
         //Determine if the bet we closing did win
-        if (bets[lastClosedBet].bet == rolledRandomNumber) {
+        if (checkWin(bets[lastClosedBet].bet, rolledRandomNumber)) {
             //WIN
             // Now close the bet
             bets[lastClosedBet].closed = true;
@@ -302,8 +318,26 @@ contract FlowRoll {
     }
 
     function checkBet(uint16 bet) internal {
-        require(bet >= min, "Bet must be >= min");
-        require(bet <= max, "Bet must be <= max");
+        //If betType is zero then the player must bet on the winner number
+        if (betType == 0) {
+            require(bet >= min, "Bet must be >= min");
+            require(bet <= max, "Bet must be <= max");
+        } else {
+            //If betType is not zero, then custom bets are not accepted, if the player won is calculated via (randomNumber % betType) == 0
+            require(bet == 0, "Not accepting custom bets");
+        }
+    }
+
+    function checkWin(
+        uint16 bet,
+        uint16 rolledRandomNumber
+    ) internal view returns (bool) {
+        if (betType == 0) {
+            return bet == rolledRandomNumber;
+        } else {
+            //Check if the rolledRandomNUmber can be divided by he betType without a remainder
+            return (rolledRandomNumber % betType) == 0;
+        }
     }
 
     function calculateHouseEdge(uint256 _of) internal view returns (uint256) {
