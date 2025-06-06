@@ -58,10 +58,10 @@ contract FlowRoll {
     // The bets stored in a mapping in order
     mapping(uint256 => DiceBets) public bets;
 
-    uint16 min;
-    uint16 max;
+    uint16 private min;
+    uint16 private max;
 
-    uint16 betType; // Specifies the bet type
+    uint16 private betType; // Specifies the bet type
     //If the betType is 0 then the player makes the bet on which number he thinks is the winner
     //betType 1 is invalid, as it can't be used for modulo because every number returns 1
     //betType 2...n is then moduloed with the random number and checed if it equals zero, this way multiple winning numbers are possible
@@ -380,7 +380,7 @@ contract FlowRoll {
     function getContractParameters()
         external
         view
-        returns (uint8, uint256, uint8, uint256, uint16, uint16)
+        returns (uint8, uint256, uint8, uint256, uint16, uint16, uint16)
     {
         return (
             winnerPrizeShare,
@@ -388,7 +388,8 @@ contract FlowRoll {
             houseEdge,
             revealCompensation,
             min,
-            max
+            max,
+            betType
         );
     }
 
