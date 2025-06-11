@@ -1,5 +1,7 @@
 # Flow Roll Club
 
+![logo](pitch_deck.jpg)
+
 These are the smart contracts for Flow Roll Club, a gambling dice NFT project built exclusively for the Flow blockchain using Flow EVM. It uses Flow native VRF random number generation for a dice game which can be minted as an NFT. The owner of the Dice game (The NFT owner) will be able earn passive income from dice game players and the players can win a percentage from a prizeVault if they are able to guess the next number rolled accurately.
 
 ✅ On-Chain Gambling Is DeFi:
