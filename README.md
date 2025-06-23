@@ -57,7 +57,7 @@ The Fees earned by the house in the Dice Game will be transferred to the owner o
 
 `fundPrizePoolFLOW` and `fundPrizePoolERC20` functions are available to fund the dice game to get it started to incentivize players. 
 
-`rollDiceFLOW` and `rollDiceERC20` functions will allow a player to deposit and make a bet, `revealDiceRoll` function will allow anyone to reveal the result of the dice roll in the next blocks.
+`betFlow` and `betERC20` functions will allow a player to deposit and make a bet, `revealDiceRoll` function will allow anyone to reveal the result of the dice roll in the next blocks.
 For security purposes the roll and the reveal can't be inside the same transaction. The revealCompensation is an incentive to earn a little income by helping the game chug along without a central server.
 
 ## Evaluating a win
