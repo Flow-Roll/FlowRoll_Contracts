@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./RandProvider.sol";
 //The flow roll contract is a dice game created with flow on chain randomness
 struct DiceBets {
-    uint256 requestId; //The requestId for the randoness
+    uint256 requestId; //The requestId for the randomness
     uint256 createdAtBlock;
     address player; //The address that is betting
     uint16 bet; //The number to bet on
@@ -163,7 +163,8 @@ contract FlowRoll {
         emit PrizePoolFunded(amount);
     }
 
-    function rollDiceFLOW(uint16 bet) external payable {
+
+    function betFlow(uint16 bet) external payable {
         require(msg.value == diceRollCost, "Invalid value sent");
         require(ERC20Address == address(0), "Only FLow");
 
@@ -188,7 +189,7 @@ contract FlowRoll {
         emit RollPlaced(msg.sender, bet, prizeVault);
     }
 
-    function rollDiceERC20(uint256 betAmount, uint16 bet) external {
+    function betERC20(uint256 betAmount, uint16 bet) external {
         require(betAmount == diceRollCost, "Invalid ");
         require(ERC20Address != address(0), "Must use Flow");
         checkBet(bet);
@@ -376,7 +377,7 @@ contract FlowRoll {
         return (vaultShare, _houseEdge);
     }
 
-    //Get contract parameters returns winnerPrizeShare,diceRollCost,houseEdge,revealCompensation,min,max
+    //Get contract parameters returns winnerPrizeShare,diceRollCost,houseEdge,revealCompensation,min,max,betType
     function getContractParameters()
         external
         view
