@@ -2,11 +2,10 @@
 pragma solidity ^0.8.28;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./FlowRoll.sol";
 
-contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
+contract FlowRollNFT is ERC721, Ownable {
     uint256 public MAXMINT; //Maximum amount of NFTs that can be minted
     uint256 public count; //Custom count to associate minted tokens with contract addresses
 
@@ -14,7 +13,7 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
 
     address private nftSale;
 
-    mapping(bytes32 => bool) parametersExist;
+    mapping(bytes32 => bool) public parametersExist;
 
     event NewFlowRoll(address indexed owner);
 
@@ -87,8 +86,6 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
         flowRollContractAddresses[count] = address(_flowRoll);
 
         _safeMint(to, count);
-        //TODO: check if I need this:
-        // _setTokenURI(count, _tokenURIs); //The URI is the count, it will be accessed by count
 
         count = count + 1;
 
@@ -96,7 +93,7 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
     }
 
     function _baseURI() internal pure override returns (string memory) {
-        return "https://flowroll.club/";
+        return "https://flowroll.club/meta/";
     }
 
     function mintFlowRoll(
@@ -122,7 +119,7 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
 
     function tokenURI(
         uint256 tokenId
-    ) public view override(ERC721, ERC721URIStorage) returns (string memory) {
+    ) public view override(ERC721) returns (string memory) {
         return super.tokenURI(tokenId);
     }
 
@@ -154,7 +151,7 @@ contract FlowRollNFT is ERC721, ERC721URIStorage, Ownable {
 
     function supportsInterface(
         bytes4 interfaceId
-    ) public view override(ERC721, ERC721URIStorage) returns (bool) {
+    ) public view override(ERC721) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 

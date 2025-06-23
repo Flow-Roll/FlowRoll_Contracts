@@ -121,7 +121,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
 
       //Roll the dice with 1 FLOW
       //Betting that the next dice will be 2
-      await nr0FlowRollContract.write.rollDiceFLOW([2], { value: parseEther("0.01") });
+      await nr0FlowRollContract.write.betFlow([2], { value: parseEther("0.01") });
       //Should pass
       //Check the prizeVault
 
@@ -245,7 +245,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
       await MockRandProvider.write.setRequestRandomness([1, 1]);
 
       //Roll the dice and bet on 1
-      await nr0FlowRollContract.write.rollDiceFLOW([1], { value: parseEther("0.01") });
+      await nr0FlowRollContract.write.betFlow([1], { value: parseEther("0.01") });
 
       let prizeVault = await nr0FlowRollContract.read.prizeVault();
 
@@ -338,7 +338,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
       //Set the randomness index at 1 to 1
       await MockRandProvider.write.setRequestRandomness([2, 2]);
       //Roll the dice and bet on 1 again
-      await nr0FlowRollContract.write.rollDiceFLOW([1], { value: parseEther("0.01") });
+      await nr0FlowRollContract.write.betFlow([1], { value: parseEther("0.01") });
 
       const lastBet = await nr0FlowRollContract.read.lastBet();
       const lastClosedBet = await nr0FlowRollContract.read.lastClosedBet();
@@ -369,26 +369,26 @@ describe("FlowRoll with mocked randomness dependency", function () {
 
       //It should create coupon codes with different prices
       const COUPON1 = "#GOWITHTHEFLOW"
-      const COUPON1ComissionAddress = account3.account.address;
+      const COUPON1commissionAddress = account3.account.address;
       const COUPON1PercentageOff = 10; // 10% off
-      const COUPON1Comission = 10; //10% comission
+      const COUPON1commission = 10; //10% commission
       const COUPON1CouponUsesLeft = 2; // Only creating 2 coupons
 
       await NFTSale.write.setCoupon(
         [COUPON1,
-          COUPON1ComissionAddress,
+          COUPON1commissionAddress,
           COUPON1PercentageOff,
-          COUPON1Comission,
+          COUPON1commission,
           COUPON1CouponUsesLeft]
       );
 
       const couponParameters = await NFTSale.read.getCoupon([COUPON1]);
-      expect(couponParameters[0].toLowerCase()).to.equal(COUPON1ComissionAddress.toLowerCase())
+      expect(couponParameters[0].toLowerCase()).to.equal(COUPON1commissionAddress.toLowerCase())
       expect(couponParameters[1]).to.equal(COUPON1PercentageOff)
-      expect(couponParameters[2]).to.equal(COUPON1Comission)
+      expect(couponParameters[2]).to.equal(COUPON1commission)
       expect(couponParameters[3]).to.equal(COUPON1CouponUsesLeft)
 
-      const usedCuponAlready = await NFTSale.read.usedCouponAlready([COUPON1ComissionAddress, COUPON1])
+      const usedCuponAlready = await NFTSale.read.usedCouponAlready([COUPON1commissionAddress, COUPON1])
 
       expect(usedCuponAlready).to.equal(false);
 
@@ -398,8 +398,8 @@ describe("FlowRoll with mocked randomness dependency", function () {
       const reducedPrice = await NFTSale.read.getReducedPrice([COUPON1, fullPriceInFlow]);
       expect(reducedPrice).to.equal(parseEther("2222.1"))
       //The purchase should mint an NFT and it should have the dice game contracts
-      const comission = await NFTSale.read.getComission([reducedPrice, COUPON1])
-      expect(comission).to.equal(parseEther("222.21"));
+      const commission = await NFTSale.read.getcommission([reducedPrice, COUPON1])
+      expect(commission).to.equal(parseEther("222.21"));
 
       //Gonna buy an NFT and sends the correct amount of value.
       //NOT GONNA USE COUPON, NO ERC20 either
@@ -518,11 +518,11 @@ describe("FlowRoll with mocked randomness dependency", function () {
         address: account3.account.address
       })
 
-      const expectedComission = (reducedPrice / 100n) * BigInt(COUPON1Comission);
+      const expectedcommission = (reducedPrice / 100n) * BigInt(COUPON1commission);
 
-      expect(ownerEthBalanceAfter - ownerEthBalance).to.equal(reducedPrice - expectedComission)
+      expect(ownerEthBalanceAfter - ownerEthBalance).to.equal(reducedPrice - expectedcommission)
 
-      expect(account3AddressBalanceAfter - account3AddressBalance).to.equal(expectedComission);
+      expect(account3AddressBalanceAfter - account3AddressBalance).to.equal(expectedcommission);
 
       //now I can see the commission has been paid correctly yay
 
@@ -604,7 +604,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
       errorMessage = ""
       try {
 
-        await erc20FlowRollContract.write.rollDiceFLOW([2], { value: parseEther("1") })
+        await erc20FlowRollContract.write.betFlow([2], { value: parseEther("1") })
 
       } catch (err) {
         errorOccured = true;
@@ -640,7 +640,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
       await ERC20Account3.write.approve([erc20FLowRollContract_account3Connected.address, diceRollCost]);
 
       //Gonna roll a win
-      await erc20FLowRollContract_account3Connected.write.rollDiceERC20([diceRollCost, 1]);
+      await erc20FLowRollContract_account3Connected.write.betERC20([diceRollCost, 1]);
 
       let lastBet = await erc20FlowRollContract.read.lastBet()
       let lastClosedBet = await erc20FlowRollContract.read.lastClosedBet();
@@ -724,7 +724,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
 
       await ERC20Account3.write.approve([erc20FLowRollContract_account3Connected.address, diceRollCost]);
       //Gonna roll a loss
-      await erc20FLowRollContract_account3Connected.write.rollDiceERC20([diceRollCost, 1]);
+      await erc20FLowRollContract_account3Connected.write.betERC20([diceRollCost, 1]);
 
       ownerERC20BalanceBefore = await ERC20.read.balanceOf([owner.account.address]);
       account2ERC20BalanceBefore = await ERC20.read.balanceOf([account2.account.address]);
@@ -828,7 +828,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
       await flowRollContract.write.fundPrizePoolFLOW([parseEther("100")], { value: parseEther("100") })
       errorOccured = false;
       try {
-        await flowRollContract.write.rollDiceFLOW([3], { value: parseEther("1") });
+        await flowRollContract.write.betFlow([3], { value: parseEther("1") });
       } catch (err) {
         errorOccured = true;
         errorMessage = err.details
@@ -837,7 +837,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
       expect(errorOccured).to.be.true;
       expect(errorMessage.includes("Not accepting custom bets")).be.true;
 
-      await flowRollContract.write.rollDiceFLOW([0], { value: parseEther("1") })
+      await flowRollContract.write.betFlow([0], { value: parseEther("1") })
 
       await flowRollContract.write.revealDiceRoll();
 
@@ -850,7 +850,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
 
       await MockRandProvider.write.setIndex([2]);
       await MockRandProvider.write.setRequestRandomness([2, 2]);
-      await flowRollContract.write.rollDiceFLOW([0], { value: parseEther("1") });
+      await flowRollContract.write.betFlow([0], { value: parseEther("1") });
       await flowRollContract.write.revealDiceRoll();
       lastBet = await flowRollContract.read.lastBet();
       lastRoll = await flowRollContract.read.bets([lastBet]);
@@ -859,7 +859,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
 
       await MockRandProvider.write.setIndex([3]);
       await MockRandProvider.write.setRequestRandomness([3, 5]);
-      await flowRollContract.write.rollDiceFLOW([0], { value: parseEther("1") });
+      await flowRollContract.write.betFlow([0], { value: parseEther("1") });
       await flowRollContract.write.revealDiceRoll();
       lastBet = await flowRollContract.read.lastBet();
       lastRoll = await flowRollContract.read.bets([lastBet]);
@@ -868,7 +868,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
 
       await MockRandProvider.write.setIndex([4]);
       await MockRandProvider.write.setRequestRandomness([4, 6]);
-      await flowRollContract.write.rollDiceFLOW([0], { value: parseEther("1") });
+      await flowRollContract.write.betFlow([0], { value: parseEther("1") });
       await flowRollContract.write.revealDiceRoll();
       lastBet = await flowRollContract.read.lastBet();
       lastRoll = await flowRollContract.read.bets([lastBet]);
