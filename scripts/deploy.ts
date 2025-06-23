@@ -84,15 +84,15 @@ async function deployerDetails() {
 
 //LAST DEPLOYMENT LOGS:
 
-// $ npx hardhat run scripts/deploy.ts --network flowTestnet
+
 // Deploying contracts with the account: 0xa1603F0fAA3d93eaa3B8c31a5340f82719616940
-// Deployer balance: 99999.9982069015 FLow 
-// PriceFeed address : 0xebA57ebA9d4d7c1D3390656575cD3Fb0CB353c5C
-// RandProvider address : 0xb774Cb914e1C8B33e33830b529707Bf4bc11E67a
-// NFTSale address : 0x02627acB81E56b041292144fa294B590906B01d8
-// flowRollNFT address : 0xa9E44221D40063934BB63955b230FD5f2A60c717
-// NFT address set to:  0xa9E44221D40063934BB63955b230FD5f2A60c717
+// Deployer balance: 99999.9974161294 FLow 
+// PriceFeed address : 0x05Fcb0Cf533d656256A5dDb14212713b42A3017d
+// RandProvider address : 0xF201f7629f1617Ca9f1b9E556F3fbaa12f0423d3
+// NFTSale address : 0xB1E26C5B89BEfA0544C971210438583259F08DBC
+// flowRollNFT address : 0x7001719b0ed420132D5Ca41f974C55938E90b3C1
+// NFT address set to:  0x7001719b0ed420132D5Ca41f974C55938E90b3C1
 // protocol fee is set to 10%
 // DONE
 // Deploying contracts with the account: 0xa1603F0fAA3d93eaa3B8c31a5340f82719616940
-// Deployer balance: 99999.9974161294 FLow 
+// Deployer balance: 99999.9966322944 FLow 
