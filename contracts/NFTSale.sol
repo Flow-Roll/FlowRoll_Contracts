@@ -37,12 +37,12 @@ contract NFTSale is Ownable {
 
     address private priceFeedContract;
 
-    //The address that gets comission from a coupon payment
-    mapping(string => address) private couponComissionAddresses;
+    //The address that gets commission from a coupon payment
+    mapping(string => address) private couponcommissionAddresses;
     //The coupon percentage off is what the buyer gets off from the price
     mapping(string => uint8) private couponPercentageOff;
-    //Comission is the percentage of comission transferred from the paid value
-    mapping(string => uint8) private couponComission;
+    //commission is the percentage of commission transferred from the paid value
+    mapping(string => uint8) private couponcommission;
     //The amount of uses left from a coupon
     mapping(string => uint8) private couponUsesLeft;
     //Did the address already use that coupon? Only one per address
@@ -79,13 +79,13 @@ contract NFTSale is Ownable {
         string calldata coupon,
         address recipient,
         uint8 percentageOff,
-        uint8 comission,
+        uint8 commission,
         uint8 _couponUsesLeft
     ) external onlyOwner {
         require(recipient != address(0), "invalid recipient");
-        couponComissionAddresses[coupon] = recipient;
+        couponcommissionAddresses[coupon] = recipient;
         couponPercentageOff[coupon] = percentageOff;
-        couponComission[coupon] = comission;
+        couponcommission[coupon] = commission;
         couponUsesLeft[coupon] = _couponUsesLeft;
     }
 
@@ -93,9 +93,9 @@ contract NFTSale is Ownable {
         string calldata coupon
     ) external view returns (address, uint8, uint8, uint8) {
         return (
-            couponComissionAddresses[coupon],
+            couponcommissionAddresses[coupon],
             couponPercentageOff[coupon],
-            couponComission[coupon],
+            couponcommission[coupon],
             couponUsesLeft[coupon]
         );
     }
@@ -120,7 +120,7 @@ contract NFTSale is Ownable {
         if (bytes(coupon).length != 0) {
             //Check if the coupon is valid and if not then revert
             require(
-                couponComissionAddresses[coupon] != address(0),
+                couponcommissionAddresses[coupon] != address(0),
                 "Invalid coupon"
             );
             require(couponUsesLeft[coupon] != 0, "Coupon was used up");
@@ -136,14 +136,14 @@ contract NFTSale is Ownable {
             //Calculate the percentage off
             uint256 newPrice = getReducedPrice(coupon, flowPrice);
             require(newPrice == msg.value, "Invalid price with coupon");
-            uint256 comission = getComission(newPrice, coupon);
-            //The sale profit is newPrice minus the comission
-            uint256 profit = newPrice - comission;
+            uint256 commission = getcommission(newPrice, coupon);
+            //The sale profit is newPrice minus the commission
+            uint256 profit = newPrice - commission;
             Address.sendValue(payee, profit);
             //Forward the payments
             Address.sendValue(
-                payable(couponComissionAddresses[coupon]),
-                comission
+                payable(couponcommissionAddresses[coupon]),
+                commission
             );
         } else {
             require(msg.value == getExpectedPriceInFlow(), "Invalid price");
@@ -186,10 +186,11 @@ contract NFTSale is Ownable {
         return flowPrice - subFromPrice;
     }
 
-    function getComission(
+    //TODO: Fix the typo in commission everywhere
+    function getcommission(
         uint256 newPrice,
         string calldata coupon
     ) public view returns (uint256) {
-        return (newPrice / 100) * couponComission[coupon];
+        return (newPrice / 100) * couponcommission[coupon];
     }
 }
