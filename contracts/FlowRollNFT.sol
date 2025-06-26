@@ -21,6 +21,11 @@ contract FlowRollNFT is ERC721, Ownable {
 
     uint8 public protocolFee; // It's a percentage fee, taken from the houseEdge
 
+    //A unique name for each NFT can be set.
+    mapping(uint256 => string) public names;
+    //A mapping to store if the name has been set
+    mapping(uint256 => bool) isNameSet;
+
     constructor(
         address _randProvider,
         address _nftSale,
@@ -90,6 +95,16 @@ contract FlowRollNFT is ERC721, Ownable {
         count = count + 1;
 
         emit NewFlowRoll(msg.sender);
+    }
+
+    /**
+   THE NFT owner can set a unique name for the NFT once.
+ */
+    function setName(uint256 _tokenId, string calldata name) external {
+        require(ownerOf(_tokenId) == msg.sender, "Doesn't own tokenId");
+        require(isNameSet[_tokenId] == false, "Token Name Exists");
+        names[_tokenId] = name;
+        isNameSet[_tokenId] = true;
     }
 
     function _baseURI() internal pure override returns (string memory) {
