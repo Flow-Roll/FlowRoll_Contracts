@@ -16,12 +16,12 @@ interface IFlowRollNFT {
 }
 
 interface IPriceFeed {
-    function getPrice() external returns (int64, int32);
+    function getPrice() external view returns (int64, int32);
 
     function getEWMAPrice(
         uint256 mantissa,
         uint256 exponent
-    ) external returns (uint256);
+    ) external pure returns (uint256);
 }
 
 contract NFTSale is Ownable {
@@ -48,6 +48,9 @@ contract NFTSale is Ownable {
     //Did the address already use that coupon? Only one per address
     mapping(address => mapping(string => bool)) private addressUsedCoupon;
 
+
+    uint32 public freeMint;
+
     constructor(
         uint256 _USDcost,
         address _priceFeedContract
@@ -58,6 +61,7 @@ contract NFTSale is Ownable {
         priceFeedContract = _priceFeedContract;
         expectedExpo = -8;
         usedExpo = 8;
+        freeMint = 1000;
     }
 
     function setNFTAddress(address to) external onlyOwner {
@@ -162,7 +166,7 @@ contract NFTSale is Ownable {
     }
 
     //This function is used both internally and externally, a view function to get the flow price from the oraclie price feed
-    function getUSDPriceInFlow() public returns (uint256) {
+    function getUSDPriceInFlow() public view returns (uint256) {
         (int64 mantissa, int32 expo) = IPriceFeed(priceFeedContract).getPrice();
 
         require(expo == expectedExpo, "The exponentiation is unexpected");
@@ -174,7 +178,7 @@ contract NFTSale is Ownable {
     }
 
     //This function is used to get the expected price in flow
-    function getExpectedPriceInFlow() public returns (uint256) {
+    function getExpectedPriceInFlow() public view returns (uint256) {
         return ((USDcost * 1e18) / getUSDPriceInFlow()) * 1e18;
     }
 
@@ -186,11 +190,12 @@ contract NFTSale is Ownable {
         return flowPrice - subFromPrice;
     }
 
-    //TODO: Fix the typo in commission everywhere
     function getcommission(
         uint256 newPrice,
         string calldata coupon
     ) public view returns (uint256) {
         return (newPrice / 100) * couponcommission[coupon];
     }
+
+    function namehasher() external returns (bytes32) {}
 }
