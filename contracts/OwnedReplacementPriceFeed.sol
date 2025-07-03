@@ -11,13 +11,15 @@ contract OwnedReplacementFlowUSDPriceFeed is Ownable {
 
     int32 exponent = -8;
 
-    //Mock set price
+    constructor() Ownable(msg.sender){}
+
+    //Owner can set price
     function setPrice(int64 to, int32 expo) external onlyOwner {
         price = to;
         exponent = expo;
     }
 
-    //This mocks the oracle feed
+    //This replaces the oracle feed
     function getPrice() external view returns (int64, int32) {
         return (price, exponent);
     }
