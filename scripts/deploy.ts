@@ -86,13 +86,13 @@ async function deployerDetails() {
 
 
 // Deploying contracts with the account: 0xa1603F0fAA3d93eaa3B8c31a5340f82719616940
-// Deployer balance: 99999.9974161294 FLow 
-// PriceFeed address : 0x05Fcb0Cf533d656256A5dDb14212713b42A3017d
-// RandProvider address : 0xF201f7629f1617Ca9f1b9E556F3fbaa12f0423d3
-// NFTSale address : 0xB1E26C5B89BEfA0544C971210438583259F08DBC
-// flowRollNFT address : 0x7001719b0ed420132D5Ca41f974C55938E90b3C1
-// NFT address set to:  0x7001719b0ed420132D5Ca41f974C55938E90b3C1
+// Deployer balance: 99999.9966322944 FLow 
+// PriceFeed address : 0x11e3f42B07Ac8ed39aa70a83A019d85C4d31cb29
+// RandProvider address : 0x26A0E1656B22222Ec307fF67aF83Cd116Da750be
+// NFTSale address : 0x75A7B38DEa7F3B6D3CF2326E7dDb5Bc3C4643489
+// flowRollNFT address : 0xa6326AFFc5c539Ff4a649D40E0640c07Dc4F2a61
+// NFT address set to:  0xa6326AFFc5c539Ff4a649D40E0640c07Dc4F2a61
 // protocol fee is set to 10%
 // DONE
 // Deploying contracts with the account: 0xa1603F0fAA3d93eaa3B8c31a5340f82719616940
-// Deployer balance: 99999.9966322944 FLow 
+// Deployer balance: 99999.9958260926 FLow 
