@@ -23,10 +23,10 @@ contract FlowUsdPriceFeed {
     }
 
     //Returns the mantissa and the expo which is negative
-    function getPrice() external returns (int64, int32) {
+    function getPrice() external view returns (int64, int32) {
         PythStructs.Price memory price = pyth.getPriceNoOlderThan(
             flowusd_identifier,
-            60
+            60 //TODO: Make sure this is fine and doesn't change fast enough to make transactions fail...
         );
         return (price.price, price.expo);
     }
@@ -40,7 +40,7 @@ contract FlowUsdPriceFeed {
     function getEWMAPrice(
         uint256 mantissa,
         uint256 exponent
-    ) external returns (uint256) {
+    ) external pure returns (uint256) {
         require(exponent <= 77, "Exponent too large"); // Prevent overflow: 10^77 is close to uint256 max
         uint256 denominator = 10 ** exponent;
 
