@@ -1,9 +1,6 @@
 import { ethers } from "hardhat";
 import { ZeroAddress } from "ethers"
 
-const pythContract_testnet = "0x2880aB155794e7179c9eE2e38200202908C17B43"
-const flowusd_identifier = "0x2fb245b9a84554a0f15aa123cbb5f64cd263b59e9a87d80148cbffab50c69f30"
-
 const NFTSale_USD_COST = 1000;
 
 const firstOwnerAddress = "0x0000000000000000000000028fd6267C8D7d566f"
@@ -11,13 +8,14 @@ const firstOwnerAddress = "0x0000000000000000000000028fd6267C8D7d566f"
 async function main() {
 
     await deployerDetails()
-    const PriceFeedFactory = await ethers.getContractFactory("FlowUsdPriceFeed");
-    const priceFeed = await PriceFeedFactory.deploy(pythContract_testnet, flowusd_identifier, {})
-    
+    const PriceFeedFactory = await ethers.getContractFactory("OwnedReplacementFlowUSDPriceFeed");
+    const priceFeed = await PriceFeedFactory.deploy()
+
     log("PriceFeed", priceFeed.target)
+    await priceFeed.setPrice(34075200,-8)
     const RandProviderFactory = await ethers.getContractFactory("RandProvider");
     const randProvider = await RandProviderFactory.deploy();
-    
+
     log("RandProvider", randProvider.target)
     const priceFeedAddress = priceFeed.target;
     const randProviderAddress = randProvider.target;
@@ -86,13 +84,13 @@ async function deployerDetails() {
 
 
 // Deploying contracts with the account: 0xa1603F0fAA3d93eaa3B8c31a5340f82719616940
-// Deployer balance: 99999.9966322944 FLow 
-// PriceFeed address : 0x11e3f42B07Ac8ed39aa70a83A019d85C4d31cb29
-// RandProvider address : 0x26A0E1656B22222Ec307fF67aF83Cd116Da750be
-// NFTSale address : 0x75A7B38DEa7F3B6D3CF2326E7dDb5Bc3C4643489
-// flowRollNFT address : 0xa6326AFFc5c539Ff4a649D40E0640c07Dc4F2a61
-// NFT address set to:  0xa6326AFFc5c539Ff4a649D40E0640c07Dc4F2a61
+// Deployer balance: 99999.9957581533 FLow 
+// PriceFeed address : 0x0765DE2DB1b8E8e6aa411bEDea03146167B1Bb7C
+// RandProvider address : 0x2D31F385b0c446Cc3168ad60E46cbA7efbd9c238
+// NFTSale address : 0x28d41003761bDcF0f4f1551ecCdcE2D0dAf0B360
+// flowRollNFT address : 0x768019D079450a7E50A2AA62AB52b454324591BE
+// NFT address set to:  0x768019D079450a7E50A2AA62AB52b454324591BE
 // protocol fee is set to 10%
 // DONE
 // Deploying contracts with the account: 0xa1603F0fAA3d93eaa3B8c31a5340f82719616940
-// Deployer balance: 99999.9958260926 FLow 
+// Deployer balance: 99999.9949436896 FLow 
