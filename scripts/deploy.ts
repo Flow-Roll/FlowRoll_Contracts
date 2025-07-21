@@ -83,14 +83,15 @@ async function deployerDetails() {
 //LAST DEPLOYMENT LOGS:
 
 
+// Compiled 1 Solidity file successfully (evm target: paris).
 // Deploying contracts with the account: 0xa1603F0fAA3d93eaa3B8c31a5340f82719616940
-// Deployer balance: 99999.9957581533 FLow 
-// PriceFeed address : 0x0765DE2DB1b8E8e6aa411bEDea03146167B1Bb7C
-// RandProvider address : 0x2D31F385b0c446Cc3168ad60E46cbA7efbd9c238
-// NFTSale address : 0x28d41003761bDcF0f4f1551ecCdcE2D0dAf0B360
-// flowRollNFT address : 0x768019D079450a7E50A2AA62AB52b454324591BE
-// NFT address set to:  0x768019D079450a7E50A2AA62AB52b454324591BE
+// Deployer balance: 99999.9949322098 FLow 
+// PriceFeed address : 0x828696c50aF41F5Fa157a62825ba79EF2789B616
+// RandProvider address : 0x19beb924D80a32FE87f84C08c63f4F0C2dDCaE61
+// NFTSale address : 0x0343291e9b3F39eD8DAecad2c0C49945d4Ee2fd6
+// flowRollNFT address : 0x5FE4E3CD96237CEdcF7D8C6313d0FaD8A98Ab1B4
+// NFT address set to:  0x5FE4E3CD96237CEdcF7D8C6313d0FaD8A98Ab1B4
 // protocol fee is set to 10%
 // DONE
 // Deploying contracts with the account: 0xa1603F0fAA3d93eaa3B8c31a5340f82719616940
-// Deployer balance: 99999.9949436896 FLow 
+// Deployer balance: 99999.994120365 FLow 
