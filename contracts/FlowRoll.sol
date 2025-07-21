@@ -318,7 +318,7 @@ contract FlowRoll {
             payout);
     }
 
-    function checkBet(uint16 bet) internal {
+    function checkBet(uint16 bet) internal  view{
         //If betType is zero then the player must bet on the winner number
         if (betType == 0) {
             require(bet >= min, "Bet must be >= min");
