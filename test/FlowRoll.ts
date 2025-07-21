@@ -422,7 +422,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
 
       //Maybe I connect a different signer to the contract
       await NFTSale_account2Connected.write.buyNFT([
-        "",
+        ["Game", ""],
         account2.account.address,
         zeroAddress,
         winnerprizeShare,
@@ -466,7 +466,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
       let errorMessage = ""
       try {
         await NFTSale_account2Connected.write.buyNFT([
-          "",
+          ["Another game", ""],
           account2.account.address,
           zeroAddress,
           winnerprizeShare,
@@ -497,7 +497,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
 
       //Now I'm gonna mint one with the coupon
       await NFTSale_account2Connected.write.buyNFT([
-        COUPON1,
+        ["Game 3", COUPON1],
         account2.account.address,
         zeroAddress,
         winnerprizeShare,
@@ -555,7 +555,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
       const fullPriceInFlow = await NFTSale.read.getExpectedPriceInFlow();
 
       await NFTSale.write.buyNFT([
-        "",
+        ["Game 4", ""],
         account2.account.address,
         ERC20.address, // With the ERC20
         winnerprizeShare,
@@ -780,7 +780,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
       try {
 
         await NFTSale.write.buyNFT([
-          "",
+          ["game 5", ""],
           owner.account.address,
           zeroAddress,
           10,
@@ -798,7 +798,7 @@ describe("FlowRoll with mocked randomness dependency", function () {
       expect(errorMessage.includes("betType 1 is invalid")).to.equal(true);
 
       await NFTSale.write.buyNFT([
-        "",
+        ["game 6", ""],
         owner.account.address,
         zeroAddress,
         10,
