@@ -48,9 +48,6 @@ contract NFTSale is Ownable {
     //Did the address already use that coupon? Only one per address
     mapping(address => mapping(string => bool)) private addressUsedCoupon;
 
-
-    uint32 public freeMint;
-
     constructor(
         uint256 _USDcost,
         address _priceFeedContract
@@ -61,7 +58,7 @@ contract NFTSale is Ownable {
         priceFeedContract = _priceFeedContract;
         expectedExpo = -8;
         usedExpo = 8;
-        freeMint = 1000;
+        // freeMint = 1000;
     }
 
     function setNFTAddress(address to) external onlyOwner {
@@ -197,5 +194,4 @@ contract NFTSale is Ownable {
         return (newPrice / 100) * couponcommission[coupon];
     }
 
-    function namehasher() external returns (bytes32) {}
 }
