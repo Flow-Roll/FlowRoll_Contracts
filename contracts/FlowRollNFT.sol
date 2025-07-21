@@ -15,7 +15,7 @@ contract FlowRollNFT is ERC721, Ownable {
 
     mapping(bytes32 => bool) public parametersExist;
 
-    event NewFlowRoll(address indexed owner);
+    event NewFlowRoll(address indexed owner, uint256 tokenId);
 
     address private randProvider;
 
@@ -62,7 +62,7 @@ contract FlowRollNFT is ERC721, Ownable {
         uint256 revealCompensation,
         uint16[3] memory betParams
     ) internal {
-        require(count < MAXMINT); //Can't mint more than max mint!
+        require(count < MAXMINT, "count exceeds max mint"); //Can't mint more than max mint!
         bytes32 parametersHash = hashRollParameters(
             ERC20Address,
             winnerPrizeShare,
@@ -87,14 +87,15 @@ contract FlowRollNFT is ERC721, Ownable {
             revealCompensation,
             betParams
         );
+        uint256 _tokenId_ = count;
+        flowRollContractAddresses[_tokenId_] = address(_flowRoll);
 
-        flowRollContractAddresses[count] = address(_flowRoll);
-
-        _safeMint(to, count);
+        _safeMint(to, _tokenId_);
 
         count = count + 1;
 
-        emit NewFlowRoll(msg.sender);
+        emit NewFlowRoll(msg.sender, _tokenId_);
+
     }
 
     /**
@@ -108,7 +109,7 @@ contract FlowRollNFT is ERC721, Ownable {
     }
 
     function _baseURI() internal pure override returns (string memory) {
-        return "https://flowroll.club/meta/";
+        return "https://meta.flowroll.club/";
     }
 
     function mintFlowRoll(
@@ -118,8 +119,8 @@ contract FlowRollNFT is ERC721, Ownable {
         uint256 diceRollCost,
         uint8 houseEdge,
         uint256 revealCompensation,
-        uint16[3] memory betParams //[0] = min, [1] = max, [2] = betType
-    ) external {
+        uint16[3] memory betParams //[0] = min, [1] = max, [2] = betType,
+    ) external returns (uint256) {
         require(msg.sender == nftSale, "Only selling contract");
         _flowRollMinter(
             to,
@@ -138,7 +139,7 @@ contract FlowRollNFT is ERC721, Ownable {
         return super.tokenURI(tokenId);
     }
 
-    //Use this on the front end to check the parameters
+    //Use tmintFlowRollhis on the front end to check the parameters
     function hashRollParameters(
         address ERC20Address,
         uint8 winnerPrizeShare,
