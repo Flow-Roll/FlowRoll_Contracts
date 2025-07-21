@@ -11,7 +11,8 @@ interface IFlowRollNFT {
         uint256 diceRollCost,
         uint8 houseEdge,
         uint256 revealCompensation,
-        uint16[3] memory betParams
+        uint16[3] memory betParams,
+        string memory name
     ) external;
 }
 
@@ -109,7 +110,7 @@ contract NFTSale is Ownable {
     }
 
     function buyNFT(
-        string calldata coupon,
+        string[2] calldata stringParams, //at [0] is the name, at [1] it's the coupon
         address to,
         address ERC20Address, //THe ERC20Address parameter if 0 means the game is played for flow, else the specific ERC20 token
         uint8 winnerPrizeShare,
@@ -118,6 +119,9 @@ contract NFTSale is Ownable {
         uint256 revealCompensation,
         uint16[3] memory betParams
     ) external payable {
+        string calldata name = stringParams[0];
+        string calldata coupon = stringParams[1];
+
         if (bytes(coupon).length != 0) {
             //Check if the coupon is valid and if not then revert
             require(
@@ -158,7 +162,8 @@ contract NFTSale is Ownable {
             diceRollCost,
             houseEdge,
             revealCompensation,
-            betParams
+            betParams,
+            name
         );
     }
 

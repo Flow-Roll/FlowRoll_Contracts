@@ -23,8 +23,12 @@ contract FlowRollNFT is ERC721, Ownable {
 
     //A unique name for each NFT can be set.
     mapping(uint256 => string) public names;
+
+    //Check if the name exists already
+    mapping(string => bool) public nameExists;
+
     //A mapping to store if the name has been set
-    mapping(uint256 => bool) isNameSet;
+    // mapping(uint256 => bool) isNameSet;
 
     constructor(
         address _randProvider,
@@ -51,6 +55,8 @@ contract FlowRollNFT is ERC721, Ownable {
             revealCompensation,
             betParams
         );
+        names[count] = unicode"First 🎲";
+        nameExists[names[count]] = true;
     }
 
     function _flowRollMinter(
@@ -61,7 +67,7 @@ contract FlowRollNFT is ERC721, Ownable {
         uint8 houseEdge,
         uint256 revealCompensation,
         uint16[3] memory betParams
-    ) internal {
+    ) internal returns (uint256 _tokenId_) {
         require(count < MAXMINT, "count exceeds max mint"); //Can't mint more than max mint!
         bytes32 parametersHash = hashRollParameters(
             ERC20Address,
@@ -87,7 +93,7 @@ contract FlowRollNFT is ERC721, Ownable {
             revealCompensation,
             betParams
         );
-        uint256 _tokenId_ = count;
+        _tokenId_ = count;
         flowRollContractAddresses[_tokenId_] = address(_flowRoll);
 
         _safeMint(to, _tokenId_);
@@ -95,18 +101,8 @@ contract FlowRollNFT is ERC721, Ownable {
         count = count + 1;
 
         emit NewFlowRoll(msg.sender, _tokenId_);
-
     }
 
-    /**
-   THE NFT owner can set a unique name for the NFT once.
- */
-    function setName(uint256 _tokenId, string calldata name) external {
-        require(ownerOf(_tokenId) == msg.sender, "Doesn't own tokenId");
-        require(isNameSet[_tokenId] == false, "Token Name Exists");
-        names[_tokenId] = name;
-        isNameSet[_tokenId] = true;
-    }
 
     function _baseURI() internal pure override returns (string memory) {
         return "https://meta.flowroll.club/";
@@ -119,10 +115,13 @@ contract FlowRollNFT is ERC721, Ownable {
         uint256 diceRollCost,
         uint8 houseEdge,
         uint256 revealCompensation,
-        uint16[3] memory betParams //[0] = min, [1] = max, [2] = betType,
-    ) external returns (uint256) {
+        uint16[3] memory betParams, //[0] = min, [1] = max, [2] = betType,
+        string calldata name
+    ) external {
         require(msg.sender == nftSale, "Only selling contract");
-        _flowRollMinter(
+        require(nameExists[name] == false, "Name already exists");
+
+        uint256 _tokenId_ = _flowRollMinter(
             to,
             ERC20Address,
             winnerPrizeShare,
@@ -131,6 +130,9 @@ contract FlowRollNFT is ERC721, Ownable {
             revealCompensation,
             betParams
         );
+
+        names[_tokenId_] = name;
+        nameExists[name] = true;
     }
 
     function tokenURI(
