@@ -55,8 +55,8 @@ contract FlowRollNFT is ERC721, Ownable {
             revealCompensation,
             betParams
         );
-        names[count] = unicode"First 🎲";
-        nameExists[names[count]] = true;
+        names[0] = unicode"First 🎲";
+        nameExists[names[0]] = true;
     }
 
     function _flowRollMinter(
