@@ -4,6 +4,8 @@ pragma solidity ^0.8.28;
 import "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
 import "@pythnetwork/pyth-sdk-solidity/PythStructs.sol";
 
+//NOTE: THIS ORACLE IS NOT FUNCTIONING RIGHT NOW
+
 //This contract uses Pyth
 contract FlowUsdPriceFeed {
     IPyth pyth;
@@ -26,10 +28,11 @@ contract FlowUsdPriceFeed {
     function getPrice() external view returns (int64, int32) {
         PythStructs.Price memory price = pyth.getPriceNoOlderThan(
             flowusd_identifier,
-            60 //TODO: Make sure this is fine and doesn't change fast enough to make transactions fail...
+            60
         );
         return (price.price, price.expo);
     }
+
 
     /**
      * @notice Returns the EWMA price using new oracle data
