@@ -1,4 +1,10 @@
+# flow
+emulator-account.pkey
+imports
+
+.cursor
 node_modules
+
 .env
 
 # Hardhat files
