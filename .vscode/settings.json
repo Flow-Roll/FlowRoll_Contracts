@@ -1,0 +1,4 @@
+{
+  "cadence.flowNetwork": "testnet",
+  "cadence.configPath": "./flow.json"
+}
