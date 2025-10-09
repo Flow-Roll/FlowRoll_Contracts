@@ -58,6 +58,9 @@ contract FlowRoll {
     // The bets stored in a mapping in order
     mapping(uint256 => DiceBets) public bets;
 
+    // This stores the bet indexes per address so they are easy to fetch
+    mapping(address => uint256[]) public betIndexesForAddress;
+
     uint16 private min;
     uint16 private max;
 
@@ -163,7 +166,6 @@ contract FlowRoll {
         emit PrizePoolFunded(amount);
     }
 
-
     function betFlow(uint16 bet) external payable {
         require(msg.value == diceRollCost, "Invalid value sent");
         require(ERC20Address == address(0), "Only FLow");
@@ -185,7 +187,8 @@ contract FlowRoll {
             0, // Didn't roll a number yet,
             0 // No payout,
         );
-
+        //The betIndexesForAddress now contains all the bet history per wallet address, for easy display
+        betIndexesForAddress[msg.sender].push(lastBet);
         emit RollPlaced(msg.sender, bet, prizeVault);
     }
 
@@ -318,7 +321,7 @@ contract FlowRoll {
             payout);
     }
 
-    function checkBet(uint16 bet) internal  view{
+    function checkBet(uint16 bet) internal view {
         //If betType is zero then the player must bet on the winner number
         if (betType == 0) {
             require(bet >= min, "Bet must be >= min");
