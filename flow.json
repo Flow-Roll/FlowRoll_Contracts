@@ -1,5 +1,11 @@
 {
 	"contracts": {
+		"BettingTransactionHandler": {
+			"source": "cadence/contracts/BettingTransactionHandler.cdc",
+			"aliases": {
+				"testing": "0000000000000007"
+			}
+		},
 		"Counter": {
 			"source": "cadence/contracts/Counter.cdc",
 			"aliases": {
@@ -8,12 +14,6 @@
 		},
 		"CounterTransactionHandler": {
 			"source": "cadence/contracts/CounterTransactionHandler.cdc",
-			"aliases": {
-				"testing": "0000000000000007"
-			}
-		},
-		"BettingTransactionHandler": {
-			"source": "cadence/contracts/BettingTransactionHandler.cdc",
 			"aliases": {
 				"testing": "0000000000000007"
 			}
@@ -141,6 +141,13 @@
 			"key": {
 				"type": "file",
 				"location": "emulator-account.pkey"
+			}
+		},
+		"testent-acc": {
+			"address": "0x899f626a589afcb9",
+			"key": {
+				"type": "file",
+				"location": "testent-acc.pkey"
 			}
 		}
 	},
