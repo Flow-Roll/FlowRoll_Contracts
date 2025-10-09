@@ -7,10 +7,21 @@ import "BettingTransactionHandler"
 
 //Bet Flow and Schedule a Reveal transaction with relative delay in seconds using the manager
 
+// flow transactions send ./cadence/transactions/BetFlowAndScheduleRevealBet.cdc --args-json '[
+//     {"type": "String", "value":"0x2872A8AcF0F85EE4255AfFe2AC21a0aB25aD83b9"},
+//     {"type": "UInt16", "value": "0"},
+//     {"type": "UFix64", "value": "2.0"},
+//     {"type": "UInt64", "value": "999999"},
+//     {"type": "UFix64", "value" : "3.0"},
+//     {"type": "UInt8", "value": "1"},
+//     {"type": "UInt64","value": "1000"},
+//     {"type":"Optional", "value": null}
+// ]'
+
 transaction(
     bettingContractHex: String,
     bet: UInt16,
-    flowValue: UInt,
+    flowValue: UFix64,
     gasLimit: UInt64,
     delaySeconds: UFix64,
     priority: UInt8,
@@ -53,8 +64,7 @@ transaction(
             )
             signer.storage.save(<-handler, to: /storage/BettingTransactionHandler)
         }
-
-        // Validation/example that we can create an issue a handler capability with correct entitlement for FlowTransactionScheduler
+     // Validation/example that we can create an issue a handler capability with correct entitlement for FlowTransactionScheduler
         let _ = signer.capabilities.storage
             .issue<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>(/storage/BettingTransactionHandler)
 
@@ -145,7 +155,8 @@ transaction(
         )
         
         // Define the value as EVM.Balance struct (this is the payable amount)
-        let value = EVM.Balance(attoflow: flowValue)
+        let value = EVM.Balance(attoflow: 0)
+        value.setFLOW(flow: flowValue)
         
         // Call the contract at the given EVM address with the bet parameter and FLOW value
         let result: EVM.Result = self.coa.call(
