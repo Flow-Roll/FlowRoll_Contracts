@@ -9,6 +9,7 @@ const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.28",
     settings: {
+      viaIR: true,
       optimizer: {
         enabled: true,
         runs: 1000
@@ -16,14 +17,14 @@ const config: HardhatUserConfig = {
     }
   },
   networks: {
-    // flow: {
-    //   url: 'https://mainnet.evm.nodes.onflow.org',
-    //   accounts: [process.env.DEPLOY_WALLET_1 as string],
-    // },
-    // flowTestnet: {
-    //   url: 'https://testnet.evm.nodes.onflow.org',
-    //   accounts: [process.env.DEPLOY_WALLET_1 as string],
-    // },
+    flow: {
+      url: 'https://mainnet.evm.nodes.onflow.org',
+      accounts: [process.env.DEPLOY_WALLET_1 as string],
+    },
+    flowTestnet: {
+      url: 'https://testnet.evm.nodes.onflow.org',
+      accounts: [process.env.DEPLOY_WALLET_1 as string],
+    },
   },
   etherscan: {
     apiKey: {
