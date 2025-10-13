@@ -144,7 +144,7 @@
 			}
 		},
 		"testent-acc": {
-			"address": "0x899f626a589afcb9",
+			"address": "899f626a589afcb9",
 			"key": {
 				"type": "file",
 				"location": "testent-acc.pkey"
@@ -156,6 +156,11 @@
 			"emulator-account": [
 				"Counter",
 				"CounterTransactionHandler"
+			]
+		},
+		"testnet": {
+			"testent-acc": [
+				"BettingTransactionHandler"
 			]
 		}
 	}
