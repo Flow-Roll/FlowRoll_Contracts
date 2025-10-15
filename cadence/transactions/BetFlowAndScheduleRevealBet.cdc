@@ -12,7 +12,7 @@ import "BettingTransactionHandler"
 //     {"type": "UInt16", "value": "0"},
 //     {"type": "UFix64", "value": "2.0"},
 //     {"type": "UInt64", "value": "999999"},
-//     {"type": "UFix64", "value" : "3.0"},
+//     {"type": "UFix64", "value" : "10.0"},
 //     {"type": "UInt8", "value": "1"},
 //     {"type": "UInt64","value": "1000"},
 //     {"type":"Optional", "value": null}
@@ -43,10 +43,15 @@ transaction(
         ) ?? panic("Could not borrow reference to the signer's CadenceOwnedAccount (COA). "
             .concat("Ensure the signer account has a COA stored in the canonical /storage/evm path"))
 
+        let publicPathStr = "/public/BettingTransactionHandler_".concat(bettingContractHex)
+        let publicPath = PublicPath(identifier: publicPathStr)!
+        let storagePathStr = "/storage/BettingTransactionHandler_".concat(bettingContractHex)
+        let storagePath = StoragePath(identifier: storagePathStr)!
+
         // Check if there is a public capability already
     
      let publicCapExists = signer.capabilities
-        .get<&{FlowTransactionScheduler.TransactionHandler}>(/public/BettingTransactionHandler)
+        .get<&{FlowTransactionScheduler.TransactionHandler}>(publicPath)
         .check()
     
       if !publicCapExists{
@@ -56,23 +61,24 @@ transaction(
 
 
         // Save a handler resource to storage if not already present
-        if signer.storage.borrow<&AnyResource>(from: /storage/BettingTransactionHandler) == nil {
+        if signer.storage.borrow<&AnyResource>(from: storagePath) == nil {
             let handler <- BettingTransactionHandler.createHandler(
                 bettingContractHex: bettingContractHex,
                 gasLimit: gasLimit,
                 coa: coaCap
             )
-            signer.storage.save(<-handler, to: /storage/BettingTransactionHandler)
+            signer.storage.save(<-handler, to: storagePath)
         }
+
      // Validation/example that we can create an issue a handler capability with correct entitlement for FlowTransactionScheduler
         let _ = signer.capabilities.storage
-            .issue<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>(/storage/BettingTransactionHandler)
+            .issue<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>(storagePath)
 
         // Issue a non-entitled public capability for the handler that is publicly accessible
         let publicCap = signer.capabilities.storage
-            .issue<&{FlowTransactionScheduler.TransactionHandler}>(/storage/BettingTransactionHandler)
+            .issue<&{FlowTransactionScheduler.TransactionHandler}>(storagePath)
         // publish the capability
-        signer.capabilities.publish(publicCap, at: /public/BettingTransactionHandler)
+        signer.capabilities.publish(publicCap, at: publicPath)
       }
 
         //Now I can schedule the reveal transaction
@@ -88,12 +94,12 @@ transaction(
         // Need to check both controllers because the order of controllers is not guaranteed
         var handlerCap: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>? = nil
         if let cap = signer.capabilities.storage
-                            .getControllers(forPath: /storage/BettingTransactionHandler)[0]
+                            .getControllers(forPath: storagePath)[0]
                             .capability as? Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}> {
             handlerCap = cap
         } else {
             handlerCap = signer.capabilities.storage
-                            .getControllers(forPath: /storage/BettingTransactionHandler)[1]
+                            .getControllers(forPath: storagePath)[1]
                             .capability as! Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>
         }
 
@@ -122,7 +128,7 @@ transaction(
             priority: pr,
             executionEffort: executionEffort
         )
-
+        
         assert(
             est.timestamp != nil || pr == FlowTransactionScheduler.Priority.Low,
             message: est.error ?? "estimation failed"
