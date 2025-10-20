@@ -4,32 +4,30 @@
 
 These are the smart contracts for Flow Roll Club, a gambling dice NFT project built exclusively for the Flow blockchain using Flow EVM. It uses Flow native VRF random number generation for a dice game which can be minted as an NFT. The owner of the Dice game (The NFT owner) will be able earn passive income from dice game players and the players can win a percentage from a prizeVault if they are able to guess the next number rolled accurately.
 
-✅ On-Chain Gambling Is DeFi:
-1. It is non-custodial (users control their funds via smart contracts).
+Flow Roll Club democratizes becoming the house and offering games and lets individuals create games of their choice.
 
-2. It operates on decentralized infrastructure. Deployed on Flow Blockchain
+Deployed on flow testnet! Latest important contract addresses:
 
-3. The logic is enforced by public smart contracts, not a central operator.
+NFTSaleV2: "0x67E9A2e94DF5328F5b0DD97083EA15CCe71E17ED",
+FlowRollNFT: "0x5219333BEeD9c98A0D0A625C9e5578A9DaAa94Ff"
 
-4. Payouts are automatic and transparent.
-
-5. Includes DeFi-like mechanics, token governance by NFT ownership.
+The games are individual contracts with their own address.
 
 
 ### How it works?
 
-The NFTs can be purchased using the NFTSale contract. The price of the NFTs are in Flow and can be set by the admin.
+The NFTs can be purchased using the NFTSale contract v2. The price of the NFTs are in Flow and can be set by the admin.
 
 The admin can configure coupon codes for purchasing NFTs, which can allow a third party for earning commission from the NFT sales and it can be used for a marketing strategy.
 
-The `NFTSale.sol` contract contains the buyNFT function which can accept a coupon code and the parameters of the NFT.
+The `NFTSaleV2.sol` contract contains the buyNFT function which can accept a coupon code and the parameters of the NFT.
 
 The NFT parameters contain the dice game parameters, including: 
 1. ERC20 token used, 
 2. What percentage of the prizePool is paid out to winners
 3. How much does a dice roll cost?
 4. How much percentage does the NFT holder earn?
-5. The compensation for revealing the dice roll (dice rolls use a commit-reveal mechanism to avoid cheating and this is the reveal incentive) 
+5. The compensation for revealing the dice roll (dice rolls use a commit-reveal mechanism to avoid cheating and this is the reveal incentive) THIS IS GETTING DEPRECATED DUE TO THE USE OF SCHEDULED TRANSACTIONSs
 6. The dice min and max numbers (can be 1-6 or 1-12 etc.. it's a uint16)
 7. The bet Type, which is encoded into a single uint16 number, passed together with min and max as betParameters
 
@@ -47,7 +45,7 @@ The FLowRollNFT will mint the first NFT token in the constructor, then only the 
 
 The NFT contract also enforces that each game parameters can only exist once, so each NFT contract has to be different.
 
-`PriceFeed.sol` and `MockPriceFeed.sol` implements a flow/usd price oracle using pyth.
+`PriceFeed.sol` and `MockPriceFeed.sol` implements a flow/usd price oracle using pyth which are now deprecated
 
 `FlowRoll.sol` implements the Dice Game central to the Flow Roll Club. It's deployed when the NFT is minted.
 
@@ -60,13 +58,21 @@ The Fees earned by the house in the Dice Game will be transferred to the owner o
 `betFlow` and `betERC20` functions will allow a player to deposit and make a bet, `revealDiceRoll` function will allow anyone to reveal the result of the dice roll in the next blocks.
 For security purposes the roll and the reveal can't be inside the same transaction. The revealCompensation is an incentive to earn a little income by helping the game chug along without a central server.
 
+## Cadence
+The core logic is in Solidity but it's called via Cadence transactions. It implements scheduled transactions to make the UX better.
+in the cadence directory you can find the important files:
+
+`cadence/contracts/BettingTransactionHandler.cdc`  - This is the handler used for the scheduled transactions. It just calls reveal on the gaming contract
+
+`cadence/transactions/BetFlowAndScheduleRevealBet.cdc` - This is the important transaction that allows players to bet and schedule a future reveal transaction
+
 ## Evaluating a win
 
 When creating an NFT and deploying an new game, the betType must be specified together with the min and max values.
 The betType encodes how the winner is evaluated.
 If betType == 0, then the player must place a bet and guess exactly the winning number to get a reward
 betType ==1 is invalid, you will understand why from the next point
-betType == 2 ...N < Max, the winning number pulled is modulod with betType and compared to zero to check for winning number. This allows the creation of games where multiple dice rolls are winner, not just a single one. The player doesn't try to roll the bet, it tries to roll a predetermined winner number.
+betType == 2 ...N < Max, the winning number pulled is using modulo with betType and compared to zero to check for winning number. This allows the creation of games where multiple dice rolls are winner, not just a single one. The player doesn't try to roll the bet, it tries to roll a predetermined winner number.
 
 Example: Min =1; Max = 18; betType = 6; Then the winner numbers are: 6, 12, 18
 Or other scenario: Min 1, Max = 2000, betType = 2, Then every even number between 1 and 2000 is a winner.
@@ -104,15 +110,13 @@ The owner of the NFT receives 0.095 FLOW, the reveal compensation is 0.01 FLOW a
 A user will be able to purchase Dice Roll Game NFTs to operate them and deposit the starting prize pool.
 The NFT can be freely traded on any exchange and the prize pool deposit and the game activity both can influence it's price. It's an NFT with actual cash flow possibility.
 
-For gamblers, they can select the Dice Roll Game with the best parameters and prize pool and call a Betting function.
+For players, they can select the Dice Roll Game with the best parameters and prize pool and call a Betting function.
 After this the Bet is added to a list. A reveal transaction needs to be sent to get the results of the game and to transfer the payments out.
+The reveal transaction is now sent using a scheduled transaction for the best UX!
 
-It provides an extra income for reveal transaction senders so gamblers can get a little extra money back. 
-
-So players would be hunting for both the best prize pool and dice roll chances and for reveal transactions to earn a quick buck.
 
 ## The coupon system
 The sale of the NFTs works with a coupon system that allows a third party advertiser to earn a commission while the user gets a certain percentage off the prize. 
 The owner must manually set the coupon code and it's parameters. The coupons can be only used once per address. If no coupon code is provided, then the buyer must pay the full price.
 
-Coupons will be pubished on social media for users to scoop up and get a good price on the NFTs and this is how incremental sale price is implemented.
+Coupons will be published on social media for users to scoop up and get a good price on the NFTs and this is how incremental sale price is implemented.
